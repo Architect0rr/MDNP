@@ -40,7 +40,7 @@ def thread(sts: setts):
 
     box = freud.box.Box.from_box(bdims)
     volume = box.volume
-    sizes: npt.NDArray[np.uint32] = np.arange(1, N_atoms + 1, dtype=np.uint32)
+    sizes: npt.NDArray[np.uint32] = np.arange(1, N_atoms + 1, dtype=np.uint64)
 
     temperatures_mat = pd.read_csv(cwd / cs.files.temperature, header=None)
     temptime = temperatures_mat[0].to_numpy(dtype=np.uint64)

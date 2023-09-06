@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 06-09-2023 20:10:21
+# Last modified: 16-04-2023 00:34:47
 
 
 import freud
@@ -21,25 +21,27 @@ def scale2box(points: npt.NDArray[np.float32], box: freud.box.Box) -> npt.NDArra
     return points
 
 
-def clusters(points: npt.NDArray[np.float32], box: freud.box.Box, r_max: float) -> npt.NDArray[np.uint32]:
+def clusters(points: npt.NDArray[np.float32], box: freud.box.Box) -> npt.NDArray[np.uint32]:
     points = box.wrap(points)
     system = freud.AABBQuery(box, points)
     cl = freud.cluster.Cluster()  # type: ignore
-    cl.compute(system, neighbors={'mode': 'ball', "r_min": 0, 'exclude_ii': True, "r_max": r_max})
+    cl.compute(system, neighbors={'mode': 'ball', "r_min": 0, 'exclude_ii': True, "r_max": 1.5})
     cl_props = freud.cluster.ClusterProperties()  # type: ignore
     cl_props.compute(system, cl.cluster_idx)
     return cl_props.sizes
 
 
-def distribution(data: npt.NDArray[np.uint32], N: int) -> npt.NDArray[np.uint32]:
-    unique, counts = np.unique(data, return_counts=True)
+def distribution(data: npt.NDArray[np.float32], box: freud.box.Box, N: int) -> npt.NDArray[np.uint32]:
+    ar = clusters(data, box)
+    unique, counts = np.unique(ar, return_counts=True)
     mat = np.zeros(N + 1, dtype=np.uint32)
     mat[unique] = counts
     return mat[1:]
 
 
 def get_dist(data: npt.NDArray[np.float32], N: int, box: freud.box.Box) -> npt.NDArray[np.uint32]:
-    return distribution(clusters(scale2box(data, box), box, 1.5), N)
+    data = scale2box(data, box)
+    return distribution(data, box, N)
 
 
 if __name__ == "__main__":
