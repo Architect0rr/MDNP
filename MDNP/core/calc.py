@@ -6,22 +6,22 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 27-07-2023 12:23:16
+# Last modified: 09-09-2023 01:05:10
 
 
 import numpy as np
 from typing import Union
 from numpy import typing as npt
 
-from ..utils import float
 from . import props
+from ..utils import fp
 
 
-def mean_size(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32]) -> float:
-    return np.sum(sizes * dist) / np.sum(dist)  # type: ignore
+def mean_size(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32]) -> fp:
+    return np.sum(sizes * dist) / np.sum(dist)
 
 
-def condensation_degree(dist: npt.NDArray[np.uint32], sizes: npt.NDArray[np.uint32], N: int, km: int) -> float:
+def condensation_degree(dist: npt.NDArray[np.uint32], sizes: npt.NDArray[np.uint32], N: int, km: int) -> fp:
     return 1 - np.sum(sizes[:km] * dist[:km]) / N
 
 
@@ -29,13 +29,13 @@ def maxsize(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32]) -> int:
     return sizes[np.nonzero(dist)][-1]  # type: ignore
 
 
-def nvv(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: float, kmin: int) -> float:
+def nvv(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: float, kmin: int) -> fp:
     # type: ignore
     return np.sum(dist[sizes <= kmin] * sizes[sizes <= kmin]) / volume
 
 
-def nd(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: float, kmin: int) -> float:
-    return np.sum(dist[sizes >= kmin]) / volume  # type: ignore
+def nd(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: float, kmin: int) -> fp:
+    return np.sum(dist[sizes >= kmin]) / volume
 
 
 def nvs(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: float, kmin: int, T: float) -> Union[float, None]:
@@ -48,12 +48,12 @@ def nvs(sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], volume: flo
         return None
     rl = (3 / (4 * np.pi * props.nl(T)))**(1 / 3)
     cplx = 2 * props.sigma(T) / (props.nl(T) * T * rl)
-    denum = np.sum(kks**2 * dzd * np.exp(cplx / kks)) / volume  # type: ignore
+    denum = np.sum(kks**2 * dzd * np.exp(cplx / kks)) / volume
 
     return num / denum
 
 
-def Srh_props(nvv: float, T: float) -> float:
+def Srh_props(nvv: fp, T: float) -> fp:
     return nvv/props.nvs(T)
 
 
@@ -65,7 +65,7 @@ def get_row(step: int, sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint3
     # km = np.argmin(np.abs(ld - eps))  # type: ignore
 
     # tow = np.zeros(8, dtype=np.float32)
-    nv: float = nvv(sizes, dist, volume, kmin)
+    nv: fp = nvv(sizes, dist, volume, kmin)
     nvss = nvs(sizes, dist, volume, kmin, T)
     if nvss is None:
         Srh = 0

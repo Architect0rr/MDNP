@@ -6,23 +6,20 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 06-09-2023 17:46:35
+# Last modified: 09-09-2023 01:10:58
 
 from typing import Dict
 from pathlib import Path
-# import csv
 
-# import pandas as pd
+import freud
 import numpy as np
 from numpy import typing as npt
-import freud
 
 import adios2
 from .utils import setts
 from .mpiworks import MPI_TAGS
 from ..core.distribution import get_dist
 from .. import constants as cs
-# from ..core import calc
 
 
 def thread(sts: setts):

@@ -6,12 +6,10 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:37:11
+# Last modified: 09-09-2023 01:45:18
 
+log: str = "logs"
+post_process_log: str = "post_process"
 
-import sys
-
-from MDNP.mpi import multmpi
-
-
-sys.exit(multmpi.mpi_wrap())
+if __name__ == "__main__":
+    pass

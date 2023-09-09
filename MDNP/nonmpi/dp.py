@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 28-07-2023 09:42:16
+# Last modified: 09-09-2023 01:39:48
 
 import csv
 import json
@@ -18,7 +18,6 @@ import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
-from ..utils import float
 from ..core import calc, props
 from .. import constants as cs
 

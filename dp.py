@@ -6,12 +6,12 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 25-07-2023 12:26:40
+# Last modified: 09-09-2023 01:37:35
 
 
 import sys
 
-from MDDPN.nonmpi import dp
+from MDNP.nonmpi import dp
 
 
 sys.exit(dp.main())

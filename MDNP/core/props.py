@@ -6,12 +6,10 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 26-07-2023 12:31:31
+# Last modified: 09-09-2023 01:05:22
 
 
 import numpy as np
-
-from ..utils import float
 
 
 def nl(T: float) -> float:

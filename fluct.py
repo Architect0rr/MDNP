@@ -6,12 +6,12 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 08-05-2023 22:00:35
+# Last modified: 09-09-2023 01:37:20
 
 
 import sys
 
-from MDDPN.nonmpi import fluct
+from MDNP.nonmpi import fluct
 
 
 sys.exit(fluct.main())

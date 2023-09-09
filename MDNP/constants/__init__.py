@@ -6,12 +6,10 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:37:11
+# Last modified: 09-09-2023 01:46:04
 
-
-import sys
-
-from MDNP.mpi import multmpi
-
-
-sys.exit(multmpi.mpi_wrap())
+from . import cf
+from . import fields
+from . import files
+from . import folders
+from . import obj
