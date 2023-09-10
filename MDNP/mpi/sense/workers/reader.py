@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 25-07-2023 15:23:30
+# Last modified: 10-09-2023 08:01:08
 
 
 import time
@@ -15,12 +15,11 @@ from typing import Dict, Literal, Union
 import adios2
 import numpy as np
 
-from .utils import setts
-from .mpiworks import MPI_TAGS
-from .. import constants as cs
+from ...utils_mpi import MC, MPI_TAGS
+from .... import constants as cs
 
 
-def reader(sts: setts) -> Literal[0]:
+def reader(sts: MC) -> Literal[0]:
     cwd, mpi_comm, mpi_rank = sts.cwd, sts.mpi_comm, sts.mpi_rank
     mpi_comm.Barrier()
     dasdictt: Dict[str, Union[int, Dict[str, int]]] = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA)
@@ -40,7 +39,7 @@ def reader(sts: setts) -> Literal[0]:
                 if i < storages[storage][cs.cf.begin]:  # type: ignore
                     i += 1
                     continue
-                arr = step.read(cs.cf.lammps_dist)
+                arr = step.read(cs.lcf.lammps_dist)
                 arr = arr[:, 2:5].astype(dtype=np.float32)
                 tpl = (worker_counter + ino, mpi_rank, arr)
                 print(f"MPI rank {mpi_rank}, reader, {worker_counter}")

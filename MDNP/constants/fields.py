@@ -6,8 +6,21 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:25:14
+# Last modified: 10-09-2023 07:05:59
 
+
+storages: str = "storages"
+time_step: str = "time_step"
+every: str = "every"
+data_processing_folder: str = "post_process_folder"
+
+dimensions: str = "dimensions"
+volume: str = "Volume"
+N_atoms: str = "N_atoms"
+
+number: str = "no"
+begin: str = "begin"
+end: str = "end"
 
 if __name__ == "__main__":
     pass

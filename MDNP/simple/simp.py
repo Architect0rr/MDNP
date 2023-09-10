@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 06-09-2023 22:08:47
+# Last modified: 09-09-2023 23:43:33
 
 import json
 from pathlib import Path
@@ -25,7 +25,7 @@ def proceed(cwd: Path, storages: List, params: Dict, Natoms: int):
     max_cluster_size = 0
     sizes: npt.NDArray[np.uint32] = np.arange(1, Natoms + 1, dtype=np.uint32)
     for storage in storages:
-        storage_fp = (cwd / params[cs.cf.dump_folder] / storage).as_posix()
+        storage_fp = (cwd / storage).as_posix()
         with adios2.open(storage_fp, 'r') as reader:  # type: ignore
             i = 0
         for step in reader:

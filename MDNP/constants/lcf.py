@@ -6,20 +6,11 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:35:59
+# Last modified: 09-09-2023 23:13:35
 
 xi: str = "xi"
 step_before: str = "step_before"
 step_after: str = "step_after"
-storages: str = "storages"
-time_step: str = "time_step"
-every: str = "every"
-dump_folder: str = "dump_folder"
-data_processing_folder: str = "data_processing_folder"
-
-number: str = "no"
-begin: str = "begin"
-end: str = "end"
 
 natoms: str = "natoms"
 boxxhi: str = 'boxxhi'
@@ -27,9 +18,7 @@ boxyhi: str = 'boxyhi'
 boxzhi: str = 'boxzhi'
 lammps_dist: str = 'atoms'
 
-dimensions: str = "dimensions"
-volume: str = "Volume"
-N_atoms: str = "N_atoms"
+
 # bdims: str = "bdims"
 matrix_storages: str = "mat_storages"
 

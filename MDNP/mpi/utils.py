@@ -6,21 +6,24 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-04-2023 09:13:03
+# Last modified: 10-09-2023 00:59:50
 
-from pathlib import Path
+from enum import Enum
 from typing import Union, List, Tuple
 
 from mpi4py import MPI
+
 
 MPIComm = Union[MPI.Intracomm, MPI.Intercomm]
 GatherResponseType = List[Tuple[str, int]]
 
 
-class setts():
-    def __init__(self, cwd: Path, mpi_comm: MPIComm, mpi_rank: int, mpi_size: int) -> None:
-        self.cwd: Path = cwd
-        self.mpi_comm: MPIComm = mpi_comm
-        self.mpi_rank: int = mpi_rank
-        self.mpi_size: int = mpi_size
-        pass
+class Role(str, Enum):
+    reader = 'reader'
+    proceeder = 'proceeder'
+    treater = 'treater'
+    killed = 'killed'
+    one_thread = 'one_threaded'
+    csvWriter = 'csvWriter'
+    adios_writer = 'adios_writer'
+    matr = 'matr'

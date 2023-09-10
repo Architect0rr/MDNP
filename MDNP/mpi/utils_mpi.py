@@ -6,41 +6,34 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 25-07-2023 15:27:32
+# Last modified: 10-09-2023 01:05:20
 
 
 import os
 import sys
-import csv
 import time
 import secrets
+import logging
 from enum import Enum
-from typing import List, Literal, NoReturn, Union
-
+from pathlib import Path
+from typing import Literal, Union
 
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
-
-import adios2
-import numpy as np
-from numpy import typing as npt
 from mpi4py import MPI
 
-
-from .utils import setts, MPIComm, GatherResponseType
 from .. import constants as cs
+from .utils import MPIComm, GatherResponseType
 
 
-def blockPrint() -> None:
-    sys.stdout = open(os.devnull, 'w')
-
-
-def enablePrint() -> None:
-    sys.stdout = sys.__stdout__
-
-
-class MPISanityError(RuntimeError):
-    pass
+class MC():  # MPI conf
+    def __init__(self, cwd: Path, mpi_comm: MPIComm, mpi_rank: int, mpi_size: int, logger: logging.Logger) -> None:
+        self.cwd: Path = cwd
+        self.mpi_comm: MPIComm = mpi_comm
+        self.mpi_rank: int = mpi_rank
+        self.mpi_size: int = mpi_size
+        self.logger: logging.Logger = logger
+        pass
 
 
 class MPI_TAGS(int, Enum):
@@ -57,6 +50,36 @@ class MPI_TAGS(int, Enum):
     SERV_DATA_1 = 10
     SERV_DATA_2 = 11
     SERV_DATA_3 = 12
+
+
+def blockPrint() -> None:
+    sys.stdout = open(os.devnull, 'w')
+
+
+def enablePrint() -> None:
+    sys.stdout = sys.__stdout__
+
+
+class MPISanityError(RuntimeError):
+    pass
+
+
+def setup_logger(cwd: Path, name: str, level: int = logging.INFO) -> logging.Logger:
+    folder = cwd / cs.folders.log
+    folder.mkdir(exist_ok=True, parents=True)
+    folder = folder / cs.folders.mpi_log
+    folder.mkdir(exist_ok=True, parents=True)
+
+    logfile = folder / f"{name}.log"
+
+    handler = logging.FileHandler(logfile)
+    handler.setFormatter(cs.obj.formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
 
 
 def base_sanity(mpi_size: int, mpi_rank: int, min: int) -> Literal[0]:
@@ -152,43 +175,6 @@ def nonroot_sanity(mpi_comm: MPIComm) -> Literal[1, 0]:
     if message is None:
         return 1
     return 0
-
-
-def ad_mpi_writer(sts: setts) -> NoReturn:
-    cwd, mpi_comm = sts.cwd, sts.mpi_comm
-    mpi_comm.Barrier()
-    threads: List[int] = mpi_comm.recv(source=0, tag=MPI_TAGS.TO_ACCEPT)
-    folder: str = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA)
-
-    with adios2.open((cwd / folder / cs.files.mat_storage).as_posix(), 'w') as adout:  # type: ignore
-        while True:
-            for thread in threads:
-                if mpi_comm.iprobe(source=thread, tag=MPI_TAGS.WRITE):
-                    step: int
-                    arr: npt.NDArray[np.float32]
-                    step, arr = mpi_comm.recv(source=thread, tag=MPI_TAGS.WRITE)
-                    adout.write(cs.cf.mat_step, np.array(step))  # type: ignore
-                    adout.write(cs.cf.mat_dist, arr, arr.shape, np.full(len(arr.shape), 0), arr.shape, end_step=True)  # type: ignore
-                    mpi_comm.send(obj=step, dest=0, tag=MPI_TAGS.STATE)
-
-
-def csvWriter(sts: setts) -> NoReturn:
-    cwd, mpi_comm = sts.cwd, sts.mpi_comm
-    mpi_comm.Barrier()
-    threads: List[int] = mpi_comm.recv(source=0, tag=MPI_TAGS.TO_ACCEPT)
-    folder: str = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA)
-
-    ctr: int = 0
-    with open((cwd / folder / cs.files.comp_data), "w") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        while True:
-            for thread in threads:
-                if mpi_comm.iprobe(source=thread, tag=MPI_TAGS.WRITE):
-                    data: npt.NDArray[np.float32] = mpi_comm.recv(source=thread, tag=MPI_TAGS.WRITE)
-                    writer.writerow(data)
-                    ctr += 1
-                    mpi_comm.send(obj=ctr, dest=0, tag=MPI_TAGS.STATE)
-                    csv_file.flush()
 
 
 if __name__ == "__main__":

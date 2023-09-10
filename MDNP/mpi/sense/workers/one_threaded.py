@@ -6,25 +6,23 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:39:31
+# Last modified: 10-09-2023 08:09:16
 
 import csv
 from typing import Dict
 
 import freud
+import adios2
 import numpy as np
 import pandas as pd
 from numpy import typing as npt
 
-import adios2
-from ..core import calc
-from .utils import setts
-from .mpiworks import MPI_TAGS
-from .. import constants as cs
-from ..core.distribution import get_dist
+from .... import constants as cs
+from ...utils_mpi import MC, MPI_TAGS
+from ....core import distribution, calc
 
 
-def thread(sts: setts):
+def thread(sts: MC):
     cwd, mpi_comm, mpi_rank = sts.cwd, sts.mpi_comm, sts.mpi_rank
     mpi_comm.Barrier()
 
@@ -33,10 +31,10 @@ def thread(sts: setts):
     ino, storages = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_1)
 
     params = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_2)
-    N_atoms: int = params[cs.cf.N_atoms]
-    bdims: npt.NDArray[np.float32] = params[cs.cf.dimensions]
-    dt: float = params[cs.cf.time_step]
-    dis: int = params[cs.cf.every]
+    N_atoms: int = params[cs.fields.N_atoms]
+    bdims: npt.NDArray[np.float32] = params[cs.fields.dimensions]
+    dt: float = params[cs.fields.time_step]
+    dis: int = params[cs.fields.every]
 
     box = freud.box.Box.from_box(bdims)
     volume = box.volume
@@ -48,13 +46,13 @@ def thread(sts: setts):
 
     worker_counter = 0
     print(f"MPI rank {mpi_rank}, reader, storages: {storages}")
-    output_csv_fp = (cwd / params[cs.cf.data_processing_folder] / f"rdata.{mpi_rank}.csv").as_posix()
-    ntb_fp = (cwd / params[cs.cf.data_processing_folder] / f"ntb.{mpi_rank}.bp").as_posix()
+    output_csv_fp = (cwd / params[cs.fields.data_processing_folder] / f"rdata.{mpi_rank}.csv").as_posix()
+    ntb_fp = (cwd / params[cs.fields.data_processing_folder] / f"ntb.{mpi_rank}.bp").as_posix()
     with adios2.open(ntb_fp, 'w') as adout, open(output_csv_fp, "w") as csv_file:  # type: ignore
         writer = csv.writer(csv_file, delimiter=',')
         storage: str
         for storage in storages:
-            storage_fp = (cwd / params[cs.cf.dump_folder] / storage).as_posix()
+            storage_fp = (cwd / storage).as_posix()
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore
                 total_steps = reader.steps()
                 i = 0
@@ -62,12 +60,12 @@ def thread(sts: setts):
                     if i < storages[storage][cs.cf.begin]:  # type: ignore
                         i += 1
                         continue
-                    arr = step.read(cs.cf.lammps_dist)
+                    arr = step.read(cs.lcf.lammps_dist)
                     arr = arr[:, 2:5].astype(dtype=np.float32)
 
                     stepnd = worker_counter + ino
 
-                    dist = get_dist(arr, N_atoms, box)
+                    dist = distribution.get_dist(arr, N_atoms, box)
 
                     adout.write(cs.cf.mat_step, np.array(stepnd))  # type: ignore
                     adout.write(cs.cf.mat_dist, dist, dist.shape, np.full(len(dist.shape), 0), dist.shape, end_step=True)  # type: ignore

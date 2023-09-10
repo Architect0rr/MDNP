@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 15-04-2023 21:32:45
+# Last modified: 10-09-2023 08:05:46
 
 
 import os
@@ -22,12 +22,11 @@ import freud
 import numpy as np
 from numpy import typing as npt
 
-from .utils import setts
-from .mpiworks import MPI_TAGS
-from ..core.distribution import get_dist
+from ...utils_mpi import MC, MPI_TAGS
+from ....core import distribution
 
 
-def proceed(sts: setts) -> Literal[0]:
+def proceed(sts: MC) -> Literal[0]:
     mpi_comm, mpi_rank = sts.mpi_comm, sts.mpi_rank
     mpi_comm.Barrier()
     N: int
@@ -45,7 +44,7 @@ def proceed(sts: setts) -> Literal[0]:
         if sender != reader_rank:
             pass
 
-        dist = get_dist(data, N, box)
+        dist = distribution.get_dist(data, N, box)
 
         tpl = (step, dist)
 

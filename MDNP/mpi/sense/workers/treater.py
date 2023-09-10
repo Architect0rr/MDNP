@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 25-07-2023 15:24:03
+# Last modified: 10-09-2023 08:11:20
 
 
 import os
@@ -22,21 +22,20 @@ import numpy as np
 from numpy import typing as npt
 import pandas as pd
 
-from .utils import setts
-from ..core import calc
-from .mpiworks import MPI_TAGS
-from .. import constants as cs
+from .... import constants as cs
+from ...utils_mpi import MC, MPI_TAGS
+from ....core import calc
 
 
-def treat_mpi(sts: setts) -> Literal[0]:
+def treat_mpi(sts: MC) -> Literal[0]:
     cwd, mpi_comm, mpi_rank = sts.cwd, sts.mpi_comm, sts.mpi_rank
     mpi_comm.Barrier()
     proc_rank = mpi_rank - 1
     params: Dict[str, Any] = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA)
-    N_atoms: int = params[cs.cf.N_atoms]
-    bdims: npt.NDArray[np.float32] = params[cs.cf.dimensions]
-    dt: float = params[cs.cf.time_step]
-    dis: int = params[cs.cf.every]
+    N_atoms: int = params[cs.fields.N_atoms]
+    bdims: npt.NDArray[np.float32] = params[cs.fields.dimensions]
+    dt: float = params[cs.fields.time_step]
+    dis: int = params[cs.fields.every]
 
     box = freud.box.Box.from_box(np.array(bdims))
     volume = box.volume
