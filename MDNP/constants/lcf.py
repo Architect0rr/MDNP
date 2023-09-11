@@ -8,10 +8,6 @@
 
 # Last modified: 09-09-2023 23:13:35
 
-xi: str = "xi"
-step_before: str = "step_before"
-step_after: str = "step_after"
-
 natoms: str = "natoms"
 boxxhi: str = 'boxxhi'
 boxyhi: str = 'boxyhi'
@@ -20,7 +16,6 @@ lammps_dist: str = 'atoms'
 
 
 # bdims: str = "bdims"
-matrix_storages: str = "mat_storages"
 
 pp_state_name: str = "name"
 pp_state: str = "state"

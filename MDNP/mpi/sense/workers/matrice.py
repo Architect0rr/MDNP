@@ -6,16 +6,17 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 08:08:04
+# Last modified: 11-09-2023 20:35:10
 
 from typing import Dict
 from pathlib import Path
 
-import freud
-import adios2
+import freud  # type: ignore
+import adios2  # type: ignore
 import numpy as np
 from numpy import typing as npt
 
+from ...utils import STATE
 from ...utils_mpi import MC, MPI_TAGS
 from .... import constants as cs
 from ....core import distribution
@@ -24,13 +25,16 @@ from ....core import distribution
 def thread(sts: MC):
     cwd: Path
     cwd, mpi_comm, mpi_rank = sts.cwd, sts.mpi_comm, sts.mpi_rank
-    mpi_comm.Barrier()
 
+    sts.logger.info("Receiving storages")
     ino: int
     storages: Dict[str, int]
     ino, storages = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_1)
+    sts.logger.info("Storages received")
 
+    sts.logger.info("Receiving paramseters")
     params = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_2)
+    sts.logger.info("Parameters received")
 
     N_atoms: int = params[cs.fields.N_atoms]
     bdims: npt.NDArray[np.float32] = params[cs.fields.dimensions]
@@ -39,16 +43,17 @@ def thread(sts: MC):
 
     max_cluster_size = 0
     worker_counter = 0
-    print(f"MPI rank {mpi_rank}, reader, storages: {storages}")
     ntb_fp: Path = cwd / params[cs.fields.data_processing_folder] / f"ntb.{mpi_rank}.bp"
+    sts.logger.info(f"Trying to create adios storage: {ntb_fp}")
     with adios2.open(ntb_fp.as_posix(), 'w') as adout:  # type: ignore
         storage: str
+        sts.logger.info("Stating main loop")
         for storage in storages:
             storage_fp = (cwd / storage).as_posix()
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore
                 i = 0
                 for step in reader:
-                    if i < storages[storage][cs.cf.begin]:  # type: ignore
+                    if i < storages[storage][cs.fields.begin]:  # type: ignore
                         i += 1
                         continue
                     arr = step.read(cs.lcf.lammps_dist)
@@ -58,22 +63,24 @@ def thread(sts: MC):
 
                     dist = distribution.get_dist(arr, N_atoms, box)
 
-                    adout.write(cs.cf.mat_step, np.array(stepnd))  # type: ignore
-                    adout.write(cs.cf.mat_dist, dist, dist.shape, np.full(len(dist.shape), 0), dist.shape, end_step=True)  # type: ignore
+                    adout.write(cs.lcf.mat_step, np.array(stepnd))  # type: ignore
+                    adout.write(cs.lcf.mat_dist, dist, dist.shape, np.full(len(dist.shape), 0), dist.shape, end_step=True)  # type: ignore
 
-                    max_cluster_size = np.argmax(sizes[dist != 0])
+                    max_cluster_size = int(np.argmax(sizes[dist != 0]))
 
                     worker_counter += 1
                     mpi_comm.send(obj=worker_counter, dest=0, tag=MPI_TAGS.STATE)
 
-                    if i == storages[storage][cs.cf.end] + storages[storage][cs.cf.begin] - 1:  # type: ignore
-                        print(f"MPI rank {mpi_rank}, reader, reached end of distribution, {storage, i, worker_counter}")
+                    if i == storages[storage][cs.fields.end] + storages[storage][cs.fields.begin] - 1:  # type: ignore
                         break
 
                     i += 1
 
-    mpi_comm.send(obj=-1, dest=0, tag=MPI_TAGS.STATE)
+    sts.logger.info("Reached end")
+    mpi_comm.send(obj=STATE.EXITED, dest=0, tag=MPI_TAGS.STATE)
     mpi_comm.send(obj=(ntb_fp, max_cluster_size), dest=0, tag=MPI_TAGS.SERV_DATA_3)
+    sts.logger.info("Exiting...")
+    return 0
 
 
 if __name__ == "__main__":

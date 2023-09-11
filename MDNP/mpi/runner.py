@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 01:12:33
+# Last modified: 10-09-2023 14:06:35
 
 
 import logging
@@ -25,7 +25,6 @@ from .utils_mpi import MPISanityError, MC
 
 
 def root(sts: MC):
-    sts.logger = sts.logger.getChild('root')
     ret = UM.root_sanity(sts.mpi_comm)
     if ret != 0:
         sts.logger.critical("MPI root sanity doesn't passed")
@@ -36,7 +35,6 @@ def root(sts: MC):
 
 
 def nonroot(sts: MC):
-    sts.logger = sts.logger.getChild('nonroot')
     ret = UM.nonroot_sanity(sts.mpi_comm)
     if ret != 0:
         sts.logger.critical("MPI nonroot sanity doesn't passed")
@@ -63,8 +61,10 @@ def mpi_wrap():
     sts = MC(cwd, mpi_comm, mpi_rank, mpi_size, logger)
 
     if mpi_rank == 0:
+        sts.logger = sts.logger.getChild('root')
         return root(sts)
     else:
+        sts.logger = sts.logger.getChild('nonroot')
         return nonroot(sts)
 
 

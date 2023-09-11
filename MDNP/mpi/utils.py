@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 00:59:50
+# Last modified: 11-09-2023 00:22:27
 
 from enum import Enum
 from typing import Union, List, Tuple
@@ -19,6 +19,9 @@ GatherResponseType = List[Tuple[str, int]]
 
 
 class Role(str, Enum):
+    def __init__(self, s: str) -> None:
+        super().__init__()
+
     reader = 'reader'
     proceeder = 'proceeder'
     treater = 'treater'
@@ -27,3 +30,17 @@ class Role(str, Enum):
     csvWriter = 'csvWriter'
     adios_writer = 'adios_writer'
     matr = 'matr'
+
+
+class COMMAND(int, Enum):
+    def __init__(self, i: int) -> None:
+        super().__init__()
+
+    EXIT = -1
+
+
+class STATE(int, Enum):
+    def __init__(self) -> None:
+        super().__init__()
+
+    EXITED = -1

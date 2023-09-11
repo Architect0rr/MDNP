@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:39:48
+# Last modified: 11-09-2023 20:49:23
 
 import csv
 import json
@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, Tuple, Union
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
 from numpy import typing as npt
 
 from ..core import calc, props
@@ -25,30 +25,30 @@ from .. import constants as cs
 BUF_SIZE = 65536  # 64kb
 
 
-def find_file(cwd: Path, file: Union[str, None], subf: str, defname: str) -> Tuple[bool, Path]:
+def find_file(cwd: Path, file: Union[str, None], subf: str, defname: str) -> Path:
     if (cwd / subf).exists():
         if file is None:
             if (f := (cwd / subf / defname)).exists():
-                return True, f
+                return f
             raise FileNotFoundError(f"File {f.as_posix()} cannot be found")
         elif (f := (cwd / subf / file)).exists():
-            return True, f
+            return f
         raise FileNotFoundError(f"File {f.as_posix()} cannot be found")
     elif file is None:
         if (f := (cwd / defname)).exists():
-            return False, f
+            return f
         raise FileNotFoundError(f"File {f.as_posix()} cannot be found")
     elif (f := (cwd / file)).exists():
-        return False, f
+        return f
     raise FileNotFoundError(f"File {f.as_posix()} cannot be found")
 
 
 def proceed(infile: Path, outfile: Path, conf: Dict, temp_mat: Tuple[npt.NDArray[np.uint64], npt.NDArray[np.float32]], cut: int, km: int):
     temptime, temperatures = temp_mat
-    dis = conf[cs.cf.every]
-    N_atoms = conf[cs.cf.N_atoms]
-    time_step = conf[cs.cf.time_step]
-    volume = conf[cs.cf.volume]
+    dis = conf[cs.fields.every]
+    N_atoms = conf[cs.fields.N_atoms]
+    time_step = conf[cs.fields.time_step]
+    volume = conf[cs.fields.volume]
     sizes: npt.NDArray[np.uint32] = np.arange(1, cut + 1, 1, dtype=np.uint32)
     with pd.read_csv(infile, header=None, chunksize=BUF_SIZE) as reader, open(outfile, "w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
@@ -73,8 +73,8 @@ def ncut(infile: Path) -> int:
 
 
 def km(infile: Path, conf: Dict, cut: int, eps: float) -> int:
-    fst = round(conf[cs.cf.step_before] / conf[cs.cf.every])
-    N_atoms = conf[cs.cf.N_atoms]
+    fst = round(conf[cs.fields.step_before] / conf[cs.fields.every])
+    N_atoms = conf[cs.fields.N_atoms]
     sizes = np.arange(1, cut + 1, 1)
     with pd.read_csv(infile, header=None, chunksize=BUF_SIZE) as reader:
         chunk: pd.DataFrame
@@ -87,7 +87,7 @@ def km(infile: Path, conf: Dict, cut: int, eps: float) -> int:
                 ld = np.array([np.sum(sizes[:i]*dist[:i]) / N_atoms for i in range(1, len(dist))], dtype=np.float32)
                 km = np.argmin(np.abs(ld - eps))
                 return int(km)
-    raise KeyError(f"Step before {conf[cs.cf.step_before]}/{conf[cs.cf.every]}={fst} not found in matrix")
+    raise KeyError(f"Step before {conf[cs.fields.step_before]}/{conf[cs.fields.every]}={fst} not found in matrix")
 
 
 def get_spec_step(infile: Path, needed_step: int) -> npt.NDArray[np.uint64]:
@@ -107,8 +107,8 @@ def get_S1_dist(cwd: Path, son: Dict, data_file: Path, dis: int) -> npt.NDArray[
     temptime: npt.NDArray[np.uint64] = temperatures_mat[0].to_numpy(dtype=np.uint64)
     temperatures: npt.NDArray[np.float32] = temperatures_mat[1].to_numpy(dtype=np.float32)
 
-    N_atoms: int = son[cs.cf.N_atoms]
-    nvz: float = N_atoms/son[cs.cf.volume]
+    N_atoms: int = son[cs.fields.N_atoms]
+    nvz: float = N_atoms/son[cs.fields.volume]
     Stemp: float = props.nvs_reverse(nvz)
     Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
     Sstep: int = int(Sstep_var/dis) + 1
@@ -142,7 +142,7 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
         h = args.h
         i = 0
         while i < cut:
-            val = np.sum(dist[i:i+h]) / h / son[cs.cf.volume]
+            val = np.sum(dist[i:i+h]) / h / son[cs.fields.volume]
             dist_buff = np.vstack([dist_buff, (i, val)])
             i += h
             h += args.dh
@@ -162,8 +162,8 @@ def run(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path, dis: in
     temptime: npt.NDArray[np.uint64] = temperatures_mat[0].to_numpy(dtype=np.uint64)
     temperatures: npt.NDArray[np.float32] = temperatures_mat[1].to_numpy(dtype=np.float32)
 
-    N_atoms: int = son[cs.cf.N_atoms]
-    nvz: float = N_atoms/son[cs.cf.volume]
+    N_atoms: int = son[cs.fields.N_atoms]
+    nvz: float = N_atoms/son[cs.fields.volume]
     Stemp = props.nvs_reverse(nvz)
     Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
     Sstep: int = int(Sstep_var/dis) + 1
@@ -174,7 +174,7 @@ def run(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path, dis: in
     eps: float = args.eps
     kmin = 0
     for i in range(len(Sdist)):
-        dat = np.sum(Sdist[:i])
+        dat: int = int(np.sum(Sdist[:i]))
         if dat >= eps * N_atoms:
             kmin = i + 1
             break
@@ -184,7 +184,7 @@ def run(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path, dis: in
     return proceed(data_file, outfile, son, (temptime, temperatures), cut, kmin)
 
 
-def main():
+def main(a: None = None):
 
     parser = argparse.ArgumentParser(description='Process some floats.')
     parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
@@ -224,13 +224,11 @@ def main():
     with conf_file.open('r') as f:
         son = json.load(f)
 
-    subf: str = son[cs.cf.data_processing_folder]
-    dt: float = son[cs.cf.time_step]
-    dis: int = son[cs.cf.every]
+    subf: str = son[cs.fields.data_processing_folder]
+    dt: float = son[cs.fields.time_step]
+    dis: int = son[cs.fields.every]
 
-    mode: bool
-    data_file: Path
-    mode, data_file = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
+    data_file: Path = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
 
     cut: int = ncut(data_file)
     sizes: npt.NDArray[np.uint64] = np.arange(1, cut + 1, 1, dtype=np.uint64)

@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 08:05:46
+# Last modified: 11-09-2023 00:56:41
 
 
 import os
@@ -22,21 +22,27 @@ import freud
 import numpy as np
 from numpy import typing as npt
 
-from ...utils_mpi import MC, MPI_TAGS
+from ...utils import STATE
 from ....core import distribution
+from ...utils_mpi import MC, MPI_TAGS
 
 
 def proceed(sts: MC) -> Literal[0]:
     mpi_comm, mpi_rank = sts.mpi_comm, sts.mpi_rank
-    mpi_comm.Barrier()
+
+    sts.logger.info("Reveiving data from root")
     N: int
     bdims: npt.NDArray[np.float32]
     N, bdims = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA)
+    sts.logger.info("Data received")
+
     box = freud.box.Box.from_box(np.array(bdims))
+
     reader_rank = mpi_rank - 1
     trt_rank = mpi_rank + 1
 
-    while True:
+    sts.logger.info("Starting main loop")
+    while not mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.SERVICE) or mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.DATA):
         step: int
         sender: int
         data: npt.NDArray[np.float32]
@@ -55,13 +61,13 @@ def proceed(sts: MC) -> Literal[0]:
 
         mpi_comm.send(obj=step, dest=0, tag=MPI_TAGS.STATE)
 
-        if mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.SERVICE) and not mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.DATA):
-            if mpi_comm.recv(source=reader_rank, tag=MPI_TAGS.SERVICE) == 1:
-                break
+        # if mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.SERVICE) and not mpi_comm.iprobe(source=reader_rank, tag=MPI_TAGS.DATA):
+        #     if mpi_comm.recv(source=reader_rank, tag=MPI_TAGS.SERVICE) == 1:
+        #         break
 
     mpi_comm.send(obj=1, dest=trt_rank, tag=MPI_TAGS.SERVICE)
-
-    print(f"MPI rank {mpi_rank}, preceeder finished")
+    mpi_comm.send(obj=STATE.EXITED, dest=0, tag=MPI_TAGS.STATE)
+    sts.logger.info("Exiting...")
     return 0
 
 

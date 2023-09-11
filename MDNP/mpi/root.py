@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 07:27:18
+# Last modified: 10-09-2023 16:46:22
 
 import json
 import argparse
@@ -86,10 +86,13 @@ def main(sts: MC):
 
     if args.mode == 1:
         sts.logger.info("Running group run")
+        sts.logger = sts.logger.getChild('group')
         return group_run(sts, son, 3)
     elif args.mode == 2:
+        sts.logger = sts.logger.getChild('one')
         sts.logger.info("Running one threaded run")
         return one_threaded(sts, son, 1)
     elif args.mode == 3:
+        sts.logger = sts.logger.getChild('new')
         sts.logger.info("Running new run")
         return new(sts, son, 1)

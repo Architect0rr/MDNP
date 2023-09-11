@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 25-07-2023 15:56:36
+# Last modified: 11-09-2023 20:51:19
 
 # TODO:
 # Change parser description
@@ -14,12 +14,13 @@
 
 import re
 import csv
+import sys
 import json
 import argparse
 from typing import List
 from pathlib import Path
 
-import adios2
+import adios2  # type: ignore
 import numpy as np
 from numpy import typing as npt
 
@@ -50,7 +51,7 @@ def process(file: Path, hms: int, lc: int, cut: int = 100):
             writer = csv.writer(csv_file, delimiter=',')
             counter = lc
             for step in adout:
-                dist: npt.NDArray[np.uint32] = step.read(cs.cf.mat_dist)
+                dist: npt.NDArray[np.uint32] = step.read(cs.lcf.mat_dist)
                 dist = dist[:cut]
 
                 buffer[counter, :] = dist
@@ -68,7 +69,7 @@ def process(file: Path, hms: int, lc: int, cut: int = 100):
     return counter
 
 
-def main():
+def main(a: None = None):
     parser = argparse.ArgumentParser(prog="fluct.py", description='CHANGEME.')
     parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
     parser.add_argument('--dT', type=float, default=0.08, help='???')
@@ -83,7 +84,7 @@ def main():
     with open(cwd / cs.files.data, 'r') as f:
         fp = json.load(f)
 
-    folder: Path = cwd / fp[cs.cf.data_processing_folder]
+    folder: Path = cwd / fp[cs.fields.data_processing_folder]
 
     storages: List[str] = []
     stf: Path
@@ -92,23 +93,25 @@ def main():
             storages.append(stf.relative_to(folder).as_posix())
 
     for file in storages:
-        stf = cwd / fp[cs.cf.data_processing_folder] / file
+        stf = cwd / fp[cs.fields.data_processing_folder] / file
         if not stf.exists():
             raise FileNotFoundError(f"File {stf.as_posix()} cannot be found")
 
-    try:
-        _temp = (fp[cs.cf.xi], fp[cs.cf.time_step], fp[cs.cf.every])
-    except KeyError:
-        raise
+    # try:
+    #     _temp = (fp[cs.fields.xi], fp[cs.fields.time_step], fp[cs.fields.every])
+    # except KeyError:
+    #     raise
 
-    hms = round(args.dT / fp[cs.cf.xi] / fp[cs.cf.time_step] / fp[cs.cf.every])
+    hms = round(args.dT / fp[cs.fields.xi] / fp[cs.fields.time_step] / fp[cs.fields.every])
     print(f"Hms is {hms} steps")
 
     lc = 0
     for file in storages:
-        stf = cwd / fp[cs.cf.data_processing_folder] / file
+        stf = cwd / fp[cs.fields.data_processing_folder] / file
         lc = process(stf, hms, lc)
+
+    return 0
 
 
 if __name__ == "___main__":
-    main()
+    sys.exit(main())

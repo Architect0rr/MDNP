@@ -6,31 +6,30 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:21:09
+# Last modified: 11-09-2023 20:56:30
 
 import json
 import logging
 import argparse
 import warnings
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
-import pandas as pd
+import pandas as pd  # type: ignore
 
-from ..control.utils import states
 from .. import constants as cs
-from ..control.execution import perform_processing_run
+from MDDPN import constants as mcs
 
 
 def state_runs_check(state: dict) -> bool:
     fl = True
-    rlabels = state[cs.sf.run_labels]
+    rlabels = state[mcs.sf.run_labels]
     for label in rlabels:
         rc = 0
         while str(rc) in rlabels[label]:
             rc += 1
-        prc = rlabels[label][cs.sf.runs]
+        prc = rlabels[label][mcs.sf.runs]
         if prc != rc:
             fl = False
             warnings.warn(f"Label {label} runs: present={prc}, real={rc}")
@@ -39,10 +38,10 @@ def state_runs_check(state: dict) -> bool:
 
 def state_validate(cwd: Path, state: dict) -> bool:
     fl = True
-    rlabels = state[cs.sf.run_labels]
+    rlabels = state[mcs.sf.run_labels]
     for label in rlabels:
-        for i in range(int(rlabels[label][cs.sf.runs])):
-            dump_file: Path = cwd / cs.folders.dumps / rlabels[label][str(i)][cs.sf.dump_file]
+        for i in range(int(rlabels[label][mcs.sf.runs])):
+            dump_file: Path = cwd / mcs.folders.dumps / rlabels[label][str(i)][mcs.sf.dump_file]
             if not dump_file.exists():
                 fl = False
                 warnings.warn(f"Dump file {dump_file.as_posix()} not exists")
@@ -64,7 +63,7 @@ def calc_xi(xilog: Path, temps: Path) -> Tuple[float, int, int]:
     return (float(np.abs((temp1 - temp2) / (xist[0] - xist[1]))), int(xist[0]), int(xist[1]))
 
 
-def end(cwd: Path, state: Dict, args: argparse.Namespace, logger: logging.Logger) -> Dict:
+def end(cwd: Path, state: Dict, args: argparse.Namespace, logger: logging.Logger) -> Tuple[str, Union[str, None]]:
     origin = cwd / cs.files.temperature
     origin.rename(cs.files.temperature_backup)
     origin = cwd / cs.files.temperature_backup
@@ -78,53 +77,48 @@ def end(cwd: Path, state: Dict, args: argparse.Namespace, logger: logging.Logger
 
     if not (state_runs_check(state) and state_validate(cwd, state)):
         print("Stopped, not valid state")
-        return state
 
     xi, step_before, step_after = calc_xi(cwd / cs.files.xi_log, target)
-    xi = xi / state[cs.sf.time_step]
+    xi = xi / state[mcs.sf.time_step]
     print(f"XI: {xi}")
 
     df = []
-    rlabels = state[cs.sf.run_labels]
+    rlabels = state[mcs.sf.run_labels]
 
     for label in rlabels:
-        for i in range(int(rlabels[label][cs.sf.runs])):
-            df.append(rlabels[label][str(i)][cs.sf.dump_file])
+        for i in range(int(rlabels[label][mcs.sf.runs])):
+            df.append(rlabels[label][str(i)][mcs.sf.dump_file])
 
     if (stf := (cwd / cs.files.data)).exists():
         with open(stf, 'r') as fp:
             son = json.load(fp)
-        son[cs.cf.xi] = xi
-        son[cs.cf.step_before] = step_before
-        son[cs.cf.step_after] = step_after
-        son[cs.cf.storages] = df
-        son[cs.sf.time_step] = state[cs.sf.time_step]
-        son[cs.sf.restart_every] = state[cs.sf.restart_every]
-        son[cs.cf.dump_folder] = cs.folders.dumps
-        son[cs.cf.data_processing_folder] = cs.folders.data_processing
+        son[cs.fields.xi] = xi
+        son[cs.fields.step_before] = step_before
+        son[cs.fields.step_after] = step_after
+        son[cs.fields.storages] = df
+        son[cs.fields.time_step] = state[mcs.sf.time_step]
+        son[cs.fields.every] = state[mcs.sf.restart_every]
+        # son[cs.fields.dump_folder] = cs.folders.dumps
+        son[cs.fields.data_processing_folder] = cs.folders.data_processing
 
     else:
         stf.touch()
         son = {
-            cs.cf.step_before: step_before,
-            cs.cf.step_after: step_after,
-            cs.cf.xi: xi,
-            cs.cf.storages: df,
-            cs.sf.time_step: state[cs.sf.time_step],
-            cs.sf.restart_every: state[cs.sf.restart_every],
-            cs.cf.dump_folder: cs.folders.dumps,
-            cs.cf.data_processing_folder: cs.folders.data_processing}
+            cs.fields.step_before: step_before,
+            cs.fields.step_after: step_after,
+            cs.fields.xi: xi,
+            cs.fields.storages: df,
+            cs.fields.time_step: state[mcs.sf.time_step],
+            cs.fields.every: state[mcs.sf.restart_every],
+            # cs.fields.dump_folder: cs.folders.dumps,
+            cs.fields.data_processing_folder: cs.folders.data_processing}
 
     with open(stf, 'w') as fp:
         json.dump(son, fp)
 
     executable = Path("/scratch/perevoshchikyy/MD/MDDPN/launcher.py")
-    job_id = perform_processing_run(cwd, state, executable, 4, 32, args.params, args.part, args.nodes)
 
-    state[cs.sf.post_process_id] = job_id
-
-    state[cs.sf.state] = states.data_obtained
-    return state
+    return executable.as_posix(), None
 
 
 if __name__ == "__main__":
