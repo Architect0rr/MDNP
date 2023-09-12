@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 20:35:10
+# Last modified: 12-09-2023 01:50:54
 
 from typing import Dict
 from pathlib import Path
@@ -44,10 +44,10 @@ def thread(sts: MC):
     max_cluster_size = 0
     worker_counter = 0
     ntb_fp: Path = cwd / params[cs.fields.data_processing_folder] / f"ntb.{mpi_rank}.bp"
-    sts.logger.info(f"Trying to create adios storage: {ntb_fp}")
+    sts.logger.info(f"Trying to create adios storage: {ntb_fp.as_posix()}")
     with adios2.open(ntb_fp.as_posix(), 'w') as adout:  # type: ignore
-        storage: str
         sts.logger.info("Stating main loop")
+        storage: str
         for storage in storages:
             storage_fp = (cwd / storage).as_posix()
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore

@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 20:40:20
+# Last modified: 12-09-2023 11:06:38
 
 import csv
 import json
@@ -24,7 +24,7 @@ from ...utils_mpi import MC, MPI_TAGS
 
 def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int):
     output_csv_fp = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
-    with open(output_csv_fp, "w") as csv_file:
+    with output_csv_fp.open("w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
         for storage in storages:
             with adios2.open(storage.as_posix(), 'r') as reader:  # type: ignore

@@ -14,7 +14,11 @@ boxyhi: str = 'boxyhi'
 boxzhi: str = 'boxzhi'
 lammps_dist: str = 'atoms'
 
-
+real_timestep: str = "ntimestep"
+worker_step: str = "wstep"
+sizes: str = 'sizes'
+size_counts: str = 'scnt'
+cl_temps: str = "temps"
 # bdims: str = "bdims"
 
 pp_state_name: str = "name"

@@ -6,10 +6,10 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 06-09-2023 20:10:21
+# Last modified: 11-09-2023 22:49:24
 
 
-import freud
+import freud  # type: ignore
 import numpy as np
 from numpy import typing as npt
 
