@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 00:06:30
+# Last modified: 16-09-2023 02:07:41
 
 import sys
 import json
@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, Any, Tuple, Union
 
 from MDDPN import constants as mcs
-from .. import constants as cs
+from . import constants as cs
 
 
 def state_runs_check(state: dict, logger: logging.Logger) -> bool:

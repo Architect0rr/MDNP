@@ -6,9 +6,12 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 01:24:02
+# Last modified: 10-09-2023 00:57:45
 
-from . import nonmpi
-from . import mpi
-from . import post_processors
-from . import constants
+log: str = "logs"
+mpi_log: str = "mpi"
+post_process_log: str = "post_process"
+data_processing: str = "post"
+
+if __name__ == "__main__":
+    pass

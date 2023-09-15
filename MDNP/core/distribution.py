@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 22:49:24
+# Last modified: 16-09-2023 01:37:01
 
 
 import freud  # type: ignore
