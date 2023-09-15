@@ -6,11 +6,11 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 12-09-2023 10:31:58
+# Last modified: 15-09-2023 23:48:06
 
 import json
 import logging
-import argparse
+# import argparse
 from pathlib import Path
 from typing import List, Dict, Any, Literal
 
@@ -19,7 +19,7 @@ import numpy as np
 from numpy import typing as npt
 
 from .. import constants as cs
-# from ..core.distribution import distribution
+from ..mpi.sense.root.new import gen_matrix
 
 
 def adw(adout, name, arr, end=False):
@@ -69,7 +69,7 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
 
                 vs_square = vxs**2 + vys**2 + vzs**2
                 kes = masses * vs_square / 2
-                sum_ke_by_size = [np.sum(np.hstack([kes[ids == id] for id in ids_s])) for ids_s in ids_by_size]
+                sum_ke_by_size: List[int] = [np.sum(np.hstack([kes[ids == id] for id in ids_s])) for ids_s in ids_by_size]
                 atom_counts_by_size = cl_unique_sizes*sizes_cnt
                 ndofs_by_size = atom_counts_by_size*(ndim-1)
                 temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2 / kB
@@ -94,9 +94,8 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                 i += 1
 
     logger.info("Done")
-    logger.info("Creating csv info matrix")
 
-    return 0
+    return ntb_fp, max_cluster_size
 
 
 def setup_logger(cwd: Path, name: str, level: int = logging.INFO) -> logging.Logger:
@@ -119,10 +118,10 @@ def setup_logger(cwd: Path, name: str, level: int = logging.INFO) -> logging.Log
 def main() -> Literal[0]:
     cwd = Path.cwd()
 
-    parser = argparse.ArgumentParser(description='Generate cluster distribution matrix from ADIOS2 LAMMPS data.')
-    parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
-    parser.add_argument('--mode', action='store', type=int, default=3, help='Mode to run')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description='Generate cluster distribution matrix from ADIOS2 LAMMPS data.')
+    # parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
+    # parser.add_argument('--mode', action='store', type=int, default=3, help='Mode to run')
+    # args = parser.parse_args()
 
     logger = setup_logger(cwd, 'simple', logging.DEBUG)
 
@@ -135,7 +134,20 @@ def main() -> Literal[0]:
     data_folder = params[cs.fields.data_processing_folder]
     Natoms = params[cs.fields.N_atoms]
 
-    return proceed(cwd, storages, data_folder, Natoms, logger.getChild('proc'))
+    stor1, msize = proceed(cwd, storages, data_folder, Natoms, logger.getChild('proc'))
+    _storages = [stor1]
+
+    params[cs.fields.matrix_storages] = _storages
+
+    logger.info("Writing storages to datafile")
+    data_file = (cwd / cs.files.data)
+    with open(data_file, 'w') as fp:
+        json.dump(params, fp)
+
+    logger.info("Generating csv matrix")
+    gen_matrix(cwd, params, _storages, msize, logger.getChild('matrix_gen'))
+
+    return 0
 
 
 if __name__ == "__main__":

@@ -6,10 +6,11 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 12-09-2023 11:06:38
+# Last modified: 15-09-2023 23:45:27
 
 import csv
 import json
+import logging
 from pathlib import Path
 from typing import List, Dict, Union, Any
 
@@ -22,16 +23,20 @@ from .utils import distribute, gw2c
 from ...utils_mpi import MC, MPI_TAGS
 
 
-def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int):
-    output_csv_fp = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
+def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger):
+    output_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
+    logger.debug(f"Trying to open {output_csv_fp.as_posix()}")
     with output_csv_fp.open("w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
+        logger.debug("Starting loop")
         for storage in storages:
             with adios2.open(storage.as_posix(), 'r') as reader:  # type: ignore
                 for step in reader:
                     stee: int = step.read(cs.lcf.mat_step)
                     dist = step.read(cs.lcf.mat_dist)
                     writer.writerow(np.hstack([stee, dist[:cut]]).astype(dtype=np.uint32).flatten())
+
+    logger.debug("Success")
 
 
 def after_new(sts: MC, nv: int, params: Dict[str, Any]):
@@ -63,7 +68,7 @@ def after_new(sts: MC, nv: int, params: Dict[str, Any]):
         json.dump(params, fp)
 
     sts.logger.info("Generating csv matrix")
-    gen_matrix(cwd, params, _storages, max(max_sizes))
+    gen_matrix(cwd, params, _storages, max(max_sizes), sts.logger.getChild('mtrix_gen'))
 
     sts.logger.info("Exiting...")
     return 0

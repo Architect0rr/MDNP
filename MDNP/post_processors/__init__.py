@@ -6,12 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:37:20
+# Last modified: 16-09-2023 00:44:13
 
-
-import sys
-
-from MDNP.nonmpi import fluct
-
-
-sys.exit(fluct.main())
+from . import nonisothermal
+from . import old

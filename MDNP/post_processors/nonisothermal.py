@@ -103,7 +103,7 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
     with open(stf, 'w') as fp:
         json.dump(son, fp)
 
-    return state
+    return "MDsimp", ""
 
 
 if __name__ == "__main__":

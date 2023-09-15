@@ -6,12 +6,8 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:37:35
+# Last modified: 16-09-2023 00:42:10
 
-
-import sys
-
-from MDNP.nonmpi import dp
-
-
-sys.exit(dp.main())
+from . import simp
+from . import dp
+from . import unite
