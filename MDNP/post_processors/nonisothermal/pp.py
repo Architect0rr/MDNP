@@ -82,7 +82,7 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
         for i in range(int(rlabels[label][mcs.sf.runs])):
             df.append(rlabels[label][str(i)][mcs.sf.dump_file])
 
-    df = [f"{cs.folders.data_processing}/{el}" for el in df]
+    df = [f"{mcs.folders.dumps}/{el}" for el in df]
 
     if (stf := (cwd / cs.files.data)).exists():
         with open(stf, 'r') as fp:
