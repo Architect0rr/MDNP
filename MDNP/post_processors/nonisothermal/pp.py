@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 19:04:55
+# Last modified: 16-09-2023 19:08:18
 
 import sys
 import json
@@ -113,8 +113,8 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
         son[cs.fields.every] = state[mcs.sf.restart_every]
         son[cs.fields.data_processing_folder] = cs.folders.data_processing
         son[cs.fields.N_atoms] = Natoms
-        son[cs.fields.dimensions] = dims
-        son[cs.fields.volume] = np.prod(dims)
+        son[cs.fields.dimensions] = list(dims)
+        son[cs.fields.volume] = float(np.prod(dims))
 
     else:
         stf.touch()
@@ -124,8 +124,8 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
             cs.fields.every: state[mcs.sf.restart_every],
             cs.fields.data_processing_folder: cs.folders.data_processing,
             cs.fields.N_atoms: Natoms,
-            cs.fields.dimensions: dims,
-            cs.fields.volume: np.prod(dims)}
+            cs.fields.dimensions: list(dims),
+            cs.fields.volume: float(np.prod(dims))}
 
     with open(stf, 'w') as fp:
         json.dump(son, fp)
