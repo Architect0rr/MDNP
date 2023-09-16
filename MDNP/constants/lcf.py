@@ -19,6 +19,7 @@ worker_step: str = "wstep"
 sizes: str = 'sizes'
 size_counts: str = 'scnt'
 cl_temps: str = "temps"
+tot_temp: str = 'total_temp'
 # bdims: str = "bdims"
 
 pp_state_name: str = "name"

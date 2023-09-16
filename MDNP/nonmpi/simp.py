@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 01:33:52
+# Last modified: 17-09-2023 01:40:59
 
 import json
 import logging
@@ -31,7 +31,7 @@ def adw(adout, name, arr, end=False):
 
 def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, logger: logging.Logger):
     ndim = 3
-    kB = 1.380649e-23
+    # kB = 1.380649e-23
     worker_counter = 0
     max_cluster_size: int = 0
     sizes: npt.NDArray[np.uint64] = np.arange(1, Natoms + 1, dtype=np.uint64)
@@ -74,10 +74,10 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
 
                     ids_n_sizes = np.vstack([cl_sizes, cl_unique_ids]).T
                     ids_n_sizes = ids_n_sizes[ids_n_sizes[:, 0].argsort()]
-                    cl_ids_by_size = np.split(ids_n_sizes[:,1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
+                    cl_ids_by_size = np.split(ids_n_sizes[:, 1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
 
                     ids_by_cl_id = np.array(ids_by_cl_id, dtype=object)
-                    ids_by_size = [np.stack(np.take(ids_by_cl_id, (cl_ids_w_size-1))).flatten('A') for cl_ids_w_size in cl_ids_by_size]
+                    ids_by_size = [np.stack(np.take(ids_by_cl_id, (cl_ids_w_size-1))).flatten('A') for cl_ids_w_size in cl_ids_by_size]  # type: ignore
 
                     vs_square = vxs**2 + vys**2 + vzs**2
                     kes = masses * vs_square / 2
@@ -86,9 +86,11 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                     ndofs_by_size = atom_counts_by_size*(ndim-1)
                     temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
                     # stepnd = worker_counter + ino
+                    total_temp = (np.sum(kes) / (Natoms * (ndim - 1))) * 2
 
                     adout.write(cs.lcf.real_timestep, real_timestep)  # type: ignore
                     adout.write(cs.lcf.worker_step, np.array(worker_counter))  # type: ignore
+                    adout.write(cs.lcf.tot_temp, np.array(total_temp))  # type: ignore
                     adw(adout, cs.lcf.sizes, cl_unique_sizes)
                     adw(adout, cs.lcf.size_counts, sizes_cnt)
                     adw(adout, cs.lcf.cl_temps, temp_by_size)
