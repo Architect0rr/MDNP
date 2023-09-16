@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 02:07:41
+# Last modified: 16-09-2023 19:04:55
 
 import sys
 import json
@@ -15,8 +15,26 @@ import argparse
 from pathlib import Path
 from typing import Dict, Any, Tuple, Union
 
+import adios2
+import numpy as np
+from numpy import typing as npt
+
 from MDDPN import constants as mcs
 from . import constants as cs
+
+
+def bearbeit(storage: Path) -> Tuple[int, npt.NDArray[np.float32]]:
+    adin = adios2.open(storage.as_posix(), 'r')  # type: ignore
+
+    N = int(adin.read(cs.lcf.natoms))
+    Lx = float(adin.read(cs.lcf.boxxhi))
+    Ly = float(adin.read(cs.lcf.boxyhi))
+    Lz = float(adin.read(cs.lcf.boxzhi))
+
+    adin.close()
+
+    bdims = np.array([Lx, Ly, Lz])
+    return (N, bdims)
 
 
 def state_runs_check(state: dict, logger: logging.Logger) -> bool:
@@ -84,6 +102,9 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
 
     df = [f"{mcs.folders.dumps}/{el}" for el in df]
 
+    sto_check: Path = cwd / df[0]
+    Natoms, dims = bearbeit(sto_check)
+
     if (stf := (cwd / cs.files.data)).exists():
         with open(stf, 'r') as fp:
             son = json.load(fp)
@@ -91,6 +112,9 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
         son[cs.fields.time_step] = state[mcs.sf.time_step]
         son[cs.fields.every] = state[mcs.sf.restart_every]
         son[cs.fields.data_processing_folder] = cs.folders.data_processing
+        son[cs.fields.N_atoms] = Natoms
+        son[cs.fields.dimensions] = dims
+        son[cs.fields.volume] = np.prod(dims)
 
     else:
         stf.touch()
@@ -98,7 +122,10 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
             cs.fields.storages: df,
             cs.fields.time_step: state[mcs.sf.time_step],
             cs.fields.every: state[mcs.sf.restart_every],
-            cs.fields.data_processing_folder: cs.folders.data_processing}
+            cs.fields.data_processing_folder: cs.folders.data_processing,
+            cs.fields.N_atoms: Natoms,
+            cs.fields.dimensions: dims,
+            cs.fields.volume: np.prod(dims)}
 
     with open(stf, 'w') as fp:
         json.dump(son, fp)

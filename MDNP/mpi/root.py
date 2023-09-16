@@ -6,38 +6,23 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 10-09-2023 16:46:22
+# Last modified: 16-09-2023 18:58:53
 
 import json
 import argparse
 import logging
 from pathlib import Path
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Any
 
 import adios2
 import numpy as np
-from numpy import typing as npt
 
 from .utils_mpi import MC
 from .. import constants as cs
 from .sense.root.group import group_run
 from .sense.root.one_threaded import one_threaded
 from .sense.root.new import new
-
-
-def bearbeit(folder: Path, storages: Dict[str, int]) -> Tuple[int, npt.NDArray[np.float32]]:
-    storage = list(storages.keys())[0]
-    adin = adios2.open((folder / storage).as_posix(), 'r')  # type: ignore
-
-    N = int(adin.read(cs.lcf.natoms))
-    Lx = float(adin.read(cs.lcf.boxxhi))
-    Ly = float(adin.read(cs.lcf.boxyhi))
-    Lz = float(adin.read(cs.lcf.boxzhi))
-
-    adin.close()
-
-    bdims = np.array([Lx, Ly, Lz])
-    return (N, bdims)
+from ..utils import bearbeit
 
 
 def storage_rsolve(cwd: Path, _storages: List[str]) -> Dict[str, int]:
@@ -75,7 +60,8 @@ def main(sts: MC):
     storages = storage_rsolve(sts.cwd, _storages)
 
     sts.logger.debug("Getting N of atoms and dimensions")
-    N_atoms, bdims = bearbeit(sts.cwd, storages)
+    sto_check: Path = sts.cwd / list(storages.keys())[0]
+    N_atoms, bdims = bearbeit(sto_check)
     son[cs.fields.N_atoms] = N_atoms
     son[cs.fields.volume] = np.prod(bdims)
     son[cs.fields.dimensions] = list(bdims)
