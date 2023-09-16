@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 00:22:27
+# Last modified: 16-09-2023 18:26:17
 
 from enum import Enum
 from typing import Union, List, Tuple
@@ -40,7 +40,7 @@ class COMMAND(int, Enum):
 
 
 class STATE(int, Enum):
-    def __init__(self) -> None:
+    def __init__(self, i: int) -> None:
         super().__init__()
 
     EXITED = -1
