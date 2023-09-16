@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 22:57:11
+# Last modified: 16-09-2023 23:01:28
 
 import json
 import logging
@@ -44,67 +44,68 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
             logger.debug(f"Trying to open {storage_fp}")
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore
                 i = 0
-            for fstep in reader:
-                arr = fstep.read(cs.lcf.lammps_dist)
-                arr =  arr[arr[:, 0].argsort()]
-                real_timestep = fstep.read(cs.lcf.real_timestep)
-                ids = arr[:, 0].astype(dtype=np.uint64)
-                cl_ids = arr[:, 1].astype(dtype=np.uint64)
-                masses = arr[:, 2].astype(dtype=np.uint64)
-                vxs = arr[:, 3].astype(dtype=np.float32)
-                vys = arr[:, 4].astype(dtype=np.float32)
-                vzs = arr[:, 5].astype(dtype=np.float32)
-                # temp = arr[:, 6].astype(dtype=np.float32)
+                logger.debug("Started this storage")
+                for fstep in reader:
+                    arr = fstep.read(cs.lcf.lammps_dist)
+                    arr =  arr[arr[:, 0].argsort()]
+                    real_timestep = fstep.read(cs.lcf.real_timestep)
+                    ids = arr[:, 0].astype(dtype=np.uint64)
+                    cl_ids = arr[:, 1].astype(dtype=np.uint64)
+                    masses = arr[:, 2].astype(dtype=np.uint64)
+                    vxs = arr[:, 3].astype(dtype=np.float32)
+                    vys = arr[:, 4].astype(dtype=np.float32)
+                    vzs = arr[:, 5].astype(dtype=np.float32)
+                    # temp = arr[:, 6].astype(dtype=np.float32)
 
-                cl_unique_ids = np.unique(cl_ids)
-                cl_unique_ids.sort()
+                    cl_unique_ids = np.unique(cl_ids)
+                    cl_unique_ids.sort()
 
-                together = np.vstack([cl_ids, ids]).T
-                together = together[together[:, 0].argsort()]
-                # ids_by_cl_id = [ids[cl_ids == i] for i in cl_unique_ids]
-                ids_by_cl_id = np.split(together[:, 1], np.unique(together[:, 0], return_index=True)[1][1:])
+                    together = np.vstack([cl_ids, ids]).T
+                    together = together[together[:, 0].argsort()]
+                    # ids_by_cl_id = [ids[cl_ids == i] for i in cl_unique_ids]
+                    ids_by_cl_id = np.split(together[:, 1], np.unique(together[:, 0], return_index=True)[1][1:])
 
-                cl_sizes = np.array([len(ids) for ids in ids_by_cl_id])
-                cl_unique_sizes, sizes_cnt = np.unique(cl_sizes, return_counts=True)
+                    cl_sizes = np.array([len(ids) for ids in ids_by_cl_id])
+                    cl_unique_sizes, sizes_cnt = np.unique(cl_sizes, return_counts=True)
 
-                dist = np.zeros(Natoms + 1, dtype=np.uint32)
-                dist[cl_unique_sizes] = sizes_cnt
-                dist = dist[1:]
+                    dist = np.zeros(Natoms + 1, dtype=np.uint32)
+                    dist[cl_unique_sizes] = sizes_cnt
+                    dist = dist[1:]
 
-                cl_unique_sizes.sort()
+                    cl_unique_sizes.sort()
 
-                ids_n_sizes = np.vstack([cl_sizes, cl_unique_ids]).T
-                ids_n_sizes = ids_n_sizes[ids_n_sizes[:, 0].argsort()]
-                # cl_ids_by_size = [cl_unique_ids[cl_sizes == i] for i in cl_unique_sizes]
-                cl_ids_by_size = np.split(ids_n_sizes[:,1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
+                    ids_n_sizes = np.vstack([cl_sizes, cl_unique_ids]).T
+                    ids_n_sizes = ids_n_sizes[ids_n_sizes[:, 0].argsort()]
+                    # cl_ids_by_size = [cl_unique_ids[cl_sizes == i] for i in cl_unique_sizes]
+                    cl_ids_by_size = np.split(ids_n_sizes[:,1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
 
-                ids_by_size = [np.take(ids_by_cl_id, cl_ids_w_size-1) for cl_ids_w_size in cl_ids_by_size]
+                    ids_by_size = [np.take(ids_by_cl_id, cl_ids_w_size-1) for cl_ids_w_size in cl_ids_by_size]
 
-                vs_square = vxs**2 + vys**2 + vzs**2
-                kes = masses * vs_square / 2
-                sum_ke_by_size: List[int] = [np.sum(np.take(kes, ids_s-1)) for ids_s in ids_by_size]
-                atom_counts_by_size = cl_unique_sizes*sizes_cnt
-                ndofs_by_size = atom_counts_by_size*(ndim-1)
-                temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
+                    vs_square = vxs**2 + vys**2 + vzs**2
+                    kes = masses * vs_square / 2
+                    sum_ke_by_size: List[int] = [np.sum(np.take(kes, ids_s-1)) for ids_s in ids_by_size]
+                    atom_counts_by_size = cl_unique_sizes*sizes_cnt
+                    ndofs_by_size = atom_counts_by_size*(ndim-1)
+                    temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
 
-                # stepnd = worker_counter + ino
+                    # stepnd = worker_counter + ino
 
-                adout.write(cs.lcf.real_timestep, real_timestep)  # type: ignore
-                adout.write(cs.lcf.worker_step, np.array(worker_counter))  # type: ignore
-                adw(adout, cs.lcf.sizes, cl_unique_sizes)
-                adw(adout, cs.lcf.size_counts, sizes_cnt)
-                adw(adout, cs.lcf.cl_temps, temp_by_size)
-                adw(adout, cs.lcf.mat_dist, dist, True)
+                    adout.write(cs.lcf.real_timestep, real_timestep)  # type: ignore
+                    adout.write(cs.lcf.worker_step, np.array(worker_counter))  # type: ignore
+                    adw(adout, cs.lcf.sizes, cl_unique_sizes)
+                    adw(adout, cs.lcf.size_counts, sizes_cnt)
+                    adw(adout, cs.lcf.cl_temps, temp_by_size)
+                    adw(adout, cs.lcf.mat_dist, dist, True)
 
-                max_cluster_size = int(np.argmax(sizes[dist != 0]) + 1)
+                    max_cluster_size = int(np.argmax(sizes[dist != 0]) + 1)
 
-                worker_counter += 1
+                    worker_counter += 1
 
-                # if i == storages[storage][cs.fields.end] + storages[storage][cs.fields.begin] - 1:
-                #     print(f"Reached end of distribution, {storage, i, worker_counter}")
-                #     break
+                    # if i == storages[storage][cs.fields.end] + storages[storage][cs.fields.begin] - 1:
+                    #     print(f"Reached end of distribution, {storage, i, worker_counter}")
+                    #     break
 
-                i += 1
+                    i += 1
 
     logger.info("Done")
 
