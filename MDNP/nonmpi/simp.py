@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 23:01:28
+# Last modified: 16-09-2023 23:08:43
 
 import json
 import logging
@@ -47,11 +47,11 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                 logger.debug("Started this storage")
                 for fstep in reader:
                     arr = fstep.read(cs.lcf.lammps_dist)
-                    arr =  arr[arr[:, 0].argsort()]
+                    arr = arr[arr[:, 0].argsort()]
                     real_timestep = fstep.read(cs.lcf.real_timestep)
-                    ids = arr[:, 0].astype(dtype=np.uint64)
-                    cl_ids = arr[:, 1].astype(dtype=np.uint64)
-                    masses = arr[:, 2].astype(dtype=np.uint64)
+                    ids = arr[:, 0].astype(dtype=np.int64)
+                    cl_ids = arr[:, 1].astype(dtype=np.int64)
+                    masses = arr[:, 2].astype(dtype=np.int64)
                     vxs = arr[:, 3].astype(dtype=np.float32)
                     vys = arr[:, 4].astype(dtype=np.float32)
                     vzs = arr[:, 5].astype(dtype=np.float32)
