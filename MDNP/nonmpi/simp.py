@@ -77,9 +77,10 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                     ids_n_sizes = np.vstack([cl_sizes, cl_unique_ids]).T
                     ids_n_sizes = ids_n_sizes[ids_n_sizes[:, 0].argsort()]
                     # cl_ids_by_size = [cl_unique_ids[cl_sizes == i] for i in cl_unique_sizes]
-                    cl_ids_by_size = np.split(ids_n_sizes[:,1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
+                    cl_ids_by_size = np.split(ids_n_sizes[:, 1], np.unique(ids_n_sizes[:, 0], return_index=True)[1][1:])
 
-                    ids_by_size = [np.take(ids_by_cl_id, cl_ids_w_size-1) for cl_ids_w_size in cl_ids_by_size]
+                    ids_by_cl_id = np.array(ids_by_cl_id, dtype=object)
+                    ids_by_size = [np.take(ids_by_cl_id, (cl_ids_w_size-1)).flatten('A').astype(dtype=np.int64) for cl_ids_w_size in cl_ids_by_size]
 
                     vs_square = vxs**2 + vys**2 + vzs**2
                     kes = masses * vs_square / 2
