@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 12:30:20
+# Last modified: 17-09-2023 13:07:12
 
 import json
 import argparse
@@ -70,6 +70,9 @@ def main(sts: MC):
     sts.logger.debug("Updating info file")
     with open(data_file, 'w') as fp:
         json.dump(son, fp)
+
+    dsfghj: Path = (sts.cwd / son[cs.fields.data_processing_folder])
+    dsfghj.mkdir(exist_ok=True)
 
     if args.mode == 1:
         sts.logger.info("Running group run")
