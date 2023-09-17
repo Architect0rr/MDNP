@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 22:28:40
+# Last modified: 17-09-2023 23:15:06
 
 # import argparse
 from pathlib import Path
@@ -74,13 +74,13 @@ class adser:
 
     def wr_array(self, name: str, arr: npt.NDArray):
         Nx, var, dtype = self.vars_arr[name]
-        arr.resize(Nx)
+        arr = np.resize(arr, Nx)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_2d_array(self, name: str, arr: npt.NDArray):
         shape, var, dtype = self.vars_arr[name]
-        arr.resize(shape)
+        arr = np.resize(arr, shape)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
