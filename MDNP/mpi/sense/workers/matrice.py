@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 12-09-2023 01:50:54
+# Last modified: 17-09-2023 12:19:00
 
 from typing import Dict
 from pathlib import Path
@@ -28,7 +28,7 @@ def thread(sts: MC):
 
     sts.logger.info("Receiving storages")
     ino: int
-    storages: Dict[str, int]
+    storages: Dict[str, Dict[str, int]]
     ino, storages = mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_1)
     sts.logger.info("Storages received")
 
@@ -48,12 +48,12 @@ def thread(sts: MC):
     with adios2.open(ntb_fp.as_posix(), 'w') as adout:  # type: ignore
         sts.logger.info("Stating main loop")
         storage: str
-        for storage in storages:
+        for storage in storages.keys():
             storage_fp = (cwd / storage).as_posix()
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore
                 i = 0
                 for step in reader:
-                    if i < storages[storage][cs.fields.begin]:  # type: ignore
+                    if i < storages[storage][cs.fields.begin]:
                         i += 1
                         continue
                     arr = step.read(cs.lcf.lammps_dist)

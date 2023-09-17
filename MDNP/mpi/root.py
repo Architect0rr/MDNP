@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 18:58:53
+# Last modified: 17-09-2023 12:30:20
 
 import json
 import argparse
@@ -22,6 +22,7 @@ from .. import constants as cs
 from .sense.root.group import group_run
 from .sense.root.one_threaded import one_threaded
 from .sense.root.new import new
+from .sense.root import new_simp
 from ..utils import bearbeit
 
 
@@ -41,7 +42,7 @@ def main(sts: MC):
 
     parser = argparse.ArgumentParser(description='Generate cluster distribution matrix from ADIOS2 LAMMPS data.')
     parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
-    parser.add_argument('--mode', action='store', type=int, default=3, help='Mode to run')
+    parser.add_argument('--mode', action='store', type=int, default=4, help='Mode to run')
     args = parser.parse_args()
 
     sts.logger.info(f"Envolved args: {args}")
@@ -82,3 +83,7 @@ def main(sts: MC):
         sts.logger = sts.logger.getChild('new')
         sts.logger.info("Running new run")
         return new(sts, son, 1)
+    elif args.mode == 4:
+        sts.logger = sts.logger.getChild('ismp')
+        sts.logger.info("Running simple run")
+        return new_simp.new(sts, son, 1)

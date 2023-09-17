@@ -11,3 +11,4 @@
 from . import new
 from . import group
 from . import one_threaded
+from . import new_simp

@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 20:30:39
+# Last modified: 17-09-2023 12:29:03
 
 from .utils import Role
 from .utils import STATE
@@ -74,5 +74,10 @@ def goto(sts: MC):
         sts.logger = sts.logger.getChild('matr')
         w4sb(sts)
         return workers.matrice.thread(sts)
+    elif mrole == Role.simple:
+        mpi_comm.send(obj=mrole, dest=0, tag=MPI_TAGS.ONLINE)
+        sts.logger = sts.logger.getChild('simp')
+        w4sb(sts)
+        return workers.simp.simple(sts)
     else:
         raise RuntimeError(f"Cannot find role {mrole}. Fatal error")

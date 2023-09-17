@@ -6,20 +6,19 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 11:12:20
+# Last modified: 17-09-2023 12:13:07
 
-import json
-import logging
 # import argparse
 from pathlib import Path
-from typing import List, Dict, Any, Literal
+from typing import Dict
 
 import adios2  # type: ignore
 import numpy as np
 from numpy import typing as npt
 
-from .. import constants as cs
-from ..mpi.sense.root.new import gen_matrix
+from ...utils import STATE
+from .... import constants as cs
+from ...utils_mpi import MC, MPI_TAGS
 
 
 def adw(adout, name, arr, end=False):
@@ -29,23 +28,39 @@ def adw(adout, name, arr, end=False):
         adout.write(name, arr, arr.shape, np.full(len(arr.shape), 0), arr.shape)  # type: ignore
 
 
-def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, logger: logging.Logger):
+def simple(sts: MC):
+    sts.logger.info("Receiving storages")
+    ino: int
+    storages: Dict[str, Dict[str, int]]
+    ino, storages = sts.mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_1)
+    sts.logger.info("Storages received")
+
+    sts.logger.info("Receiving paramseters")
+    params = sts.mpi_comm.recv(source=0, tag=MPI_TAGS.SERV_DATA_2)
+    sts.logger.info("Parameters received")
+
+    Natoms: int = params[cs.fields.N_atoms]
+    sizes: npt.NDArray[np.uint64] = np.arange(1, Natoms + 1, dtype=np.uint64)
+
     ndim = 3
-    # kB = 1.380649e-23
     worker_counter = 0
     max_cluster_size: int = 0
-    sizes: npt.NDArray[np.uint64] = np.arange(1, Natoms + 1, dtype=np.uint64)
-    ntb_fp: Path = cwd / process_folder / "ntb.bp"
-    logger.info(f"Trying to create adios storage: {ntb_fp.as_posix()}")
+    ntb_fp: Path = sts.cwd / params[cs.fields.data_processing_folder] / f"ntb.{sts.mpi_rank}.bp"
+    sts.logger.info(f"Trying to create adios storage: {ntb_fp.as_posix()}")
     with adios2.open(ntb_fp.as_posix(), 'w') as adout:  # type: ignore
-        logger.info("Stating main loop")
-        for storage in storages:
-            storage_fp = (cwd / storage).as_posix()
-            logger.debug(f"Trying to open {storage_fp}")
+        sts.logger.info("Stating main loop")
+        for storage in storages.keys():
+            storage_fp = (sts.cwd / storage).as_posix()
+            sts.logger.debug(f"Trying to open {storage_fp}")
             with adios2.open(storage_fp, 'r') as reader:  # type: ignore
+                sts.logger.debug("Started this storage")
                 i = 0
-                logger.debug("Started this storage")
                 for fstep in reader:
+                    if i < storages[storage][cs.fields.begin]:
+                        i += 1
+                        continue
+                    stepnd = worker_counter + ino
+
                     arr = fstep.read(cs.lcf.lammps_dist)
                     arr = arr[arr[:, 0].argsort()]
                     real_timestep = fstep.read(cs.lcf.real_timestep)
@@ -85,12 +100,13 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                     atom_counts_by_size = cl_unique_sizes*sizes_cnt
                     ndofs_by_size = atom_counts_by_size*(ndim-1)
                     temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
-                    # stepnd = worker_counter + ino
+
                     total_temp = (np.sum(kes) / (Natoms * (ndim - 1))) * 2
 
-                    adout.write(cs.lcf.real_timestep, real_timestep)  # type: ignore
                     adout.write(cs.lcf.worker_step, np.array(worker_counter))  # type: ignore
                     adout.write(cs.lcf.tot_temp, np.array(total_temp))  # type: ignore
+                    adout.write(cs.lcf.mat_step, np.array(stepnd))  # type: ignore
+                    adout.write(cs.lcf.real_timestep, real_timestep)  # type: ignore
                     adw(adout, cs.lcf.sizes, cl_unique_sizes)
                     adw(adout, cs.lcf.size_counts, sizes_cnt)
                     adw(adout, cs.lcf.cl_temps, temp_by_size)
@@ -99,72 +115,19 @@ def proceed(cwd: Path, storages: List[str], process_folder: str, Natoms: int, lo
                     max_cluster_size = int(np.argmax(sizes[dist != 0]) + 1)
 
                     worker_counter += 1
+                    sts.mpi_comm.send(obj=worker_counter, dest=0, tag=MPI_TAGS.STATE)
 
-                    # if i == storages[storage][cs.fields.end] + storages[storage][cs.fields.begin] - 1:
-                    #     print(f"Reached end of distribution, {storage, i, worker_counter}")
-                    #     break
+                    if i == storages[storage][cs.fields.end] + storages[storage][cs.fields.begin] - 1:  # type: ignore
+                        break
 
                     i += 1
 
-    logger.info("Done")
-
-    return ntb_fp, max_cluster_size
-
-
-def setup_logger(cwd: Path, name: str, level: int = logging.INFO) -> logging.Logger:
-    folder = cwd / cs.folders.log
-    folder.mkdir(exist_ok=True, parents=True)
-    folder = folder / cs.folders.post_process_log
-    folder.mkdir(exist_ok=True, parents=True)
-    logfile = folder / "simple.log"
-
-    handler = logging.FileHandler(logfile)
-    handler.setFormatter(cs.obj.formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
-
-
-def main() -> Literal[0]:
-    cwd = Path.cwd()
-
-    # parser = argparse.ArgumentParser(description='Generate cluster distribution matrix from ADIOS2 LAMMPS data.')
-    # parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
-    # parser.add_argument('--mode', action='store', type=int, default=3, help='Mode to run')
-    # args = parser.parse_args()
-
-    logger = setup_logger(cwd, 'simple', logging.DEBUG)
-
-    data_file = (cwd / cs.files.data)
-    logger.debug("Reading datafile")
-    with open(data_file, 'r') as fp:
-        params: Dict[str, Any] = json.load(fp)
-
-    storages: List[str] = params[cs.fields.storages]
-    data_folder: str = params[cs.fields.data_processing_folder]
-    Natoms = params[cs.fields.N_atoms]
-
-    (cwd / data_folder).mkdir(exist_ok=True)
-
-    stor1, msize = proceed(cwd, storages, data_folder, Natoms, logger.getChild('proc'))
-    _storages = [stor1]
-
-    params[cs.fields.matrix_storages] = _storages
-
-    logger.info("Writing storages to datafile")
-    data_file = (cwd / cs.files.data)
-    with open(data_file, 'w') as fp:
-        json.dump(params, fp)
-
-    logger.info("Generating csv matrix")
-    gen_matrix(cwd, params, _storages, msize, logger.getChild('matrix_gen'))
-
+    sts.logger.info("Reached end")
+    sts.mpi_comm.send(obj=STATE.EXITED, dest=0, tag=MPI_TAGS.STATE)
+    sts.mpi_comm.send(obj=(ntb_fp, max_cluster_size), dest=0, tag=MPI_TAGS.SERV_DATA_3)
+    sts.logger.info("Exiting...")
     return 0
 
 
 if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+    pass

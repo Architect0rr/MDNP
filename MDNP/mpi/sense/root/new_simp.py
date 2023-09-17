@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 12:27:38
+# Last modified: 17-09-2023 12:26:43
 
 import csv
 import json
@@ -21,22 +21,6 @@ from ...utils import Role
 from .... import constants as cs
 from .utils import distribute, gw2c
 from ...utils_mpi import MC, MPI_TAGS
-
-
-def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger):
-    output_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
-    logger.debug(f"Trying to open {output_csv_fp.as_posix()}")
-    with output_csv_fp.open("w") as csv_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        logger.debug("Starting loop")
-        for storage in storages:
-            with adios2.open(storage.as_posix(), 'r') as reader:  # type: ignore
-                for step in reader:
-                    stee: int = step.read(cs.lcf.mat_step)
-                    dist = step.read(cs.lcf.mat_dist)
-                    writer.writerow(np.hstack([stee, dist[:cut]]).astype(dtype=np.uint32).flatten('A'))
-
-    logger.debug("Success")
 
 
 def new_gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger):
@@ -86,7 +70,7 @@ def after_new(sts: MC, nv: int, params: Dict[str, Any]):
         json.dump(params, fp)
 
     sts.logger.info("Generating csv matrix")
-    gen_matrix(cwd, params, _storages, max(max_sizes), sts.logger.getChild('mtrix_gen'))
+    new_gen_matrix(cwd, params, _storages, max(max_sizes), sts.logger.getChild('mtrix_gen'))
 
     sts.logger.info("Exiting...")
     return 0
@@ -100,7 +84,7 @@ def new(sts: MC, params: Dict, nv: int):
 
     sts.logger.info("Sending info about roles")
     for i in range(thread_num):
-        mpi_comm.send(obj=Role.simple, dest=i + nv, tag=MPI_TAGS.DISTRIBUTION)
+        mpi_comm.send(obj=Role.matr, dest=i + nv, tag=MPI_TAGS.DISTRIBUTION)
 
     sts.logger.info("Distributing storages")
     wd: Dict[str, Dict[str, Union[int, Dict[str, int]]]] = distribute(params[cs.fields.storages], thread_num)

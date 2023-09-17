@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 18:56:59
+# Last modified: 17-09-2023 12:27:26
 
 from enum import Enum
 from pathlib import Path
@@ -35,6 +35,7 @@ class Role(str, Enum):
     csvWriter = 'csvWriter'
     adios_writer = 'adios_writer'
     matr = 'matr'
+    simple = 'simple'
 
 
 class COMMAND(int, Enum):
