@@ -100,7 +100,7 @@ def new(sts: MC, params: Dict, nv: int):
 
     sts.logger.info("Sending info about roles")
     for i in range(thread_num):
-        mpi_comm.send(obj=Role.simple, dest=i + nv, tag=MPI_TAGS.DISTRIBUTION)
+        mpi_comm.send(obj=Role.matr, dest=i + nv, tag=MPI_TAGS.DISTRIBUTION)
 
     sts.logger.info("Distributing storages")
     wd: Dict[str, Dict[str, Union[int, Dict[str, int]]]] = distribute(params[cs.fields.storages], thread_num)
