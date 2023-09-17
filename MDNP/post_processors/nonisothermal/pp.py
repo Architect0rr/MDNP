@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 19:08:18
+# Last modified: 17-09-2023 12:53:33
 
 import sys
 import json
@@ -66,9 +66,9 @@ def state_validate(cwd: Path, state: dict, logger: logging.Logger) -> bool:
 def setup_logger(cwd: Path, logger: logging.Logger):
     folder = cwd / mcs.folders.log
     folder.mkdir(exist_ok=True, parents=True)
-    folder = folder / "post"
+    folder = folder / cs.folders.post_process_log
     folder.mkdir(exist_ok=True, parents=True)
-    logfile = folder / "post.log"
+    logfile = folder / "run.log"
 
     handler = logging.FileHandler(logfile)
     handler.setFormatter(cs.obj.formatter)
@@ -96,41 +96,45 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
     df = []
     rlabels = state[mcs.sf.run_labels]
 
+    logger.info("Getting storages from state")
     for label in rlabels:
         for i in range(int(rlabels[label][mcs.sf.runs])):
             df.append(rlabels[label][str(i)][mcs.sf.dump_file])
 
     df = [f"{mcs.folders.dumps}/{el}" for el in df]
 
+    logger.info("Getting info from first storage")
     sto_check: Path = cwd / df[0]
     Natoms, dims = bearbeit(sto_check)
 
+    son = {
+        cs.fields.storages: df,
+        cs.fields.time_step: state[mcs.sf.time_step],
+        cs.fields.every: state[mcs.sf.restart_every],
+        cs.fields.data_processing_folder: cs.folders.data_processing,
+        cs.fields.N_atoms: Natoms,
+        cs.fields.dimensions: list(dims),
+        cs.fields.volume: float(np.prod(dims))}
+
     if (stf := (cwd / cs.files.data)).exists():
-        with open(stf, 'r') as fp:
-            son = json.load(fp)
-        son[cs.fields.storages] = df
-        son[cs.fields.time_step] = state[mcs.sf.time_step]
-        son[cs.fields.every] = state[mcs.sf.restart_every]
-        son[cs.fields.data_processing_folder] = cs.folders.data_processing
-        son[cs.fields.N_atoms] = Natoms
-        son[cs.fields.dimensions] = list(dims)
-        son[cs.fields.volume] = float(np.prod(dims))
+        logger.info(f"Datafile {stf.as_posix()} already existed, deleting")
+        stf.unlink()
+        # with stf.open('r') as fp:
+        #     son = json.load(fp)
+        # son[cs.fields.storages] = df
+        # son[cs.fields.time_step] = state[mcs.sf.time_step]
+        # son[cs.fields.every] = state[mcs.sf.restart_every]
+        # son[cs.fields.data_processing_folder] = cs.folders.data_processing
+        # son[cs.fields.N_atoms] = Natoms
+        # son[cs.fields.dimensions] = list(dims)
+        # son[cs.fields.volume] = float(np.prod(dims))
 
-    else:
-        stf.touch()
-        son = {
-            cs.fields.storages: df,
-            cs.fields.time_step: state[mcs.sf.time_step],
-            cs.fields.every: state[mcs.sf.restart_every],
-            cs.fields.data_processing_folder: cs.folders.data_processing,
-            cs.fields.N_atoms: Natoms,
-            cs.fields.dimensions: list(dims),
-            cs.fields.volume: float(np.prod(dims))}
-
+    logger.info("Writing parameters to datafile")
     with open(stf, 'w') as fp:
         json.dump(son, fp)
 
-    return "MDsimp", ""
+    logger.info("Returning executable and args")
+    return "MDpost_run", " --mode=4"
 
 
 if __name__ == "__main__":
