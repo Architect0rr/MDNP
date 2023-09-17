@@ -33,7 +33,6 @@ class MC():  # MPI conf
         self.mpi_rank: int = mpi_rank
         self.mpi_size: int = mpi_size
         self.logger: logging.Logger = logger
-        pass
 
 
 class MPI_TAGS(int, Enum):
