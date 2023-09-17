@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 20:49:23
+# Last modified: 18-09-2023 00:24:49
 
 import csv
 import json
@@ -155,15 +155,25 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
     return 0
 
 
-def run(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path, dis: int, cut: int, sizes: npt.NDArray[np.uint64]):
-    outfile: Path = cwd / cs.files.comp_data
+def run(cwd: Path, temp_file: Path, son: Dict, eps: float):
+    subf: str = son[cs.fields.data_processing_folder]
+    # dt: float = son[cs.fields.time_step]
+    dis: int = son[cs.fields.every]
+    Natoms: int = son[cs.fields.N_atoms]
+    nvz: float = Natoms/son[cs.fields.volume]
 
-    temperatures_mat = pd.read_csv(cwd / cs.files.temperature, header=None)
+    outfile: Path = cwd / subf / cs.files.comp_data
+    data_file: Path = cwd / subf / cs.files.cluster_distribution_matrix
+
+    cut: int = ncut(data_file)
+    sizes: npt.NDArray[np.uint64] = np.arange(1, cut + 1, 1, dtype=np.int64)
+
+    temperatures_mat = pd.read_csv(temp_file, header=None)
     temptime: npt.NDArray[np.uint64] = temperatures_mat[0].to_numpy(dtype=np.uint64)
     temperatures: npt.NDArray[np.float32] = temperatures_mat[1].to_numpy(dtype=np.float32)
 
-    N_atoms: int = son[cs.fields.N_atoms]
-    nvz: float = N_atoms/son[cs.fields.volume]
+    # N_atoms: int = son[cs.fields.N_atoms]
+
     Stemp = props.nvs_reverse(nvz)
     Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
     Sstep: int = int(Sstep_var/dis) + 1
@@ -171,11 +181,10 @@ def run(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path, dis: in
     Sdist = get_spec_step(data_file, Sstep)
     Sdist = Sdist * sizes
 
-    eps: float = args.eps
     kmin = 0
     for i in range(len(Sdist)):
         dat: int = int(np.sum(Sdist[:i]))
-        if dat >= eps * N_atoms:
+        if dat >= eps * Natoms:
             kmin = i + 1
             break
 
@@ -188,11 +197,12 @@ def main(a: None = None):
 
     parser = argparse.ArgumentParser(description='Process some floats.')
     parser.add_argument('--debug', action='store_true', help='Debug, prints only parsed arguments')
-    parser.add_argument('--file', action='store', type=str, default=None, required=False, help='File to proceed')
+    # parser.add_argument('--file', action='store', type=str, default=None, required=False, help='File to proceed')
     sub_parsers = parser.add_subparsers(help='Select actrion', dest="command")
 
     parser_run = sub_parsers.add_parser('run', help='Proceed distribution matrix')
     parser_run.add_argument('--eps', action='store', type=float, default=0.95, required=False, help='Epsilon')
+    parser_run.add_argument('--temp_file', action='store', type=str, required=False, help='File with temperatures')
 
     parser_dist = sub_parsers.add_parser('dist', help='Get specific distribution')
     parser_dist.add_argument('--type', action='store', type=str, default='norm', required=False, help='File to proceed')
@@ -224,19 +234,19 @@ def main(a: None = None):
     with conf_file.open('r') as f:
         son = json.load(f)
 
-    subf: str = son[cs.fields.data_processing_folder]
-    dt: float = son[cs.fields.time_step]
-    dis: int = son[cs.fields.every]
+    # subf: str = son[cs.fields.data_processing_folder]
+    # dt: float = son[cs.fields.time_step]
+    # dis: int = son[cs.fields.every]
+    # Natoms: int = son[cs.fields.N_atoms]
+    km_eps = args.eps
 
-    data_file: Path = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
-
-    cut: int = ncut(data_file)
-    sizes: npt.NDArray[np.uint64] = np.arange(1, cut + 1, 1, dtype=np.uint64)
+    # data_file: Path = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
 
     if args.command == 'run':
-        return run(cwd, args, son, data_file, dis, cut, sizes)
+        return run(cwd, args.temp_file, son,  km_eps)
     elif args.command == 'dist':
-        return dist_getter(cwd, args, son, data_file, dt, dis, sizes, cut)
+        raise NotImplementedError
+        # return dist_getter(cwd, args, son, data_file, dt, dis, sizes, cut)
     else:
         raise Exception(f"Unknown command: {args.command}")
 

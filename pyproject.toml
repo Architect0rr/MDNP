@@ -24,6 +24,7 @@ classifiers = [
 [project.scripts]
 MDsimp = "MDNP.nonmpi.simp:main"
 MDpost_run = "MDNP.mpi.runner:mpi_wrap"
+Digital_processor = "MDNP.nonmpi.dp:main"
 
 
 [project.urls]
