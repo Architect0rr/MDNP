@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 18:26:31
+# Last modified: 17-09-2023 13:00:36
 
 import time
 # import json
@@ -29,7 +29,8 @@ def gw2c(sts: MC, nv: int):  # gather, wait to complete
 
     sts.logger.info("Gathering information ")
     response_array: List[Tuple[int, Role]] = []
-    while len(response_array) <= sts.mpi_size - 1:
+    while len(response_array) < sts.mpi_size - 1:
+        # sts.logger.debug("Gathering information ")
         for i in range(1, sts.mpi_size):
             if sts.mpi_comm.iprobe(source=i, tag=MPI_TAGS.ONLINE):
                 resp = sts.mpi_comm.recv(source=i, tag=MPI_TAGS.ONLINE)

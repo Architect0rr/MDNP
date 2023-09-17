@@ -84,6 +84,6 @@ def main(sts: MC):
         sts.logger.info("Running new run")
         return new(sts, son, 1)
     elif args.mode == 4:
-        sts.logger = sts.logger.getChild('ismp')
+        sts.logger = sts.logger.getChild('simp')
         sts.logger.info("Running simple run")
         return new_simp.new(sts, son, 1)
