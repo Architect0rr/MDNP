@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 22:07:49
+# Last modified: 17-09-2023 22:28:40
 
 # import argparse
 from pathlib import Path
@@ -24,7 +24,7 @@ from ...utils_mpi import MC, MPI_TAGS
 class adser:
     def __init__(self, sts: MC) -> None:
         self.sts = sts
-        self.adios = adios2.ADIOS(sts.comm)  # type: ignore
+        self.adios = adios2.ADIOS(sts.mpi_comm)  # type: ignore
         self.bpIO = self.adios.DeclareIO("BPFile_N2N")
         self.bpIO.SetEngine('bp5')
         self.fileID = self.bpIO.AddTransport('File', {'Library': 'POSIX'})
