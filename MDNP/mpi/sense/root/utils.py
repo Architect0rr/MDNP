@@ -47,7 +47,7 @@ def gw2c(sts: MC, nv: int):  # gather, wait to complete
     # fl = True
     # start = time.time()
     sts.logger.info("Starting main loop, waiting for workers to complete with 20 sec sleep")
-    while len(completed_threads) <= sts.mpi_size - nv:
+    while len(completed_threads) < sts.mpi_size - nv:
         for i in range(nv, sts.mpi_size):
             if sts.mpi_comm.iprobe(source=i, tag=MPI_TAGS.STATE):
                 tstate = sts.mpi_comm.recv(source=i, tag=MPI_TAGS.STATE)
