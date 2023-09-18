@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 11-09-2023 20:51:19
+# Last modified: 18-09-2023 02:15:46
 
 # TODO:
 # Change parser description

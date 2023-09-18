@@ -21,7 +21,8 @@ from mpi4py import MPI
 from .root import main
 from .nonroot import goto
 from . import utils_mpi as UM
-from .utils_mpi import MPISanityError, MC
+from .utils_mpi import MPISanityError, MC, MPI_TAGS
+from .utils import STATE
 
 
 def root(sts: MC):
@@ -40,8 +41,12 @@ def nonroot(sts: MC):
         sts.logger.critical("MPI nonroot sanity doesn't passed")
         raise MPISanityError("MPI nonroot sanity doesn't passed")
     else:
-        sts.logger.info("Passed mpi nonroot sanity check")
-        return goto(sts)
+        try:
+            sts.logger.info("Passed mpi nonroot sanity check")
+            return goto(sts)
+        except Exception:
+            sts.logger.exception("Something went wrong, trying to stop all")
+            sts.mpi_comm.send(obj=STATE.EXCEPTION, dest=0, tag=MPI_TAGS.STATE)
 
 
 def mpi_wrap():

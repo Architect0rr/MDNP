@@ -22,8 +22,10 @@ classifiers = [
 ]
 
 [project.scripts]
-MDsimp = "MDNP.nonmpi.simp:main"
+# MDsimp = "MDNP.nonmpi.simp:main"
 MDpost_run = "MDNP.mpi.runner:mpi_wrap"
+MDDP = "MDNP.utilities.dp:main"
+# MDunite = "MDNP.utilities.unite:main"
 
 
 [project.urls]

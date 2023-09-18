@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 13:00:36
+# Last modified: 18-09-2023 12:15:33
 
 import time
 # import json
@@ -59,6 +59,11 @@ def gw2c(sts: MC, nv: int):  # gather, wait to complete
                     #         json.dump(states, fp)
                     #     fl = False
                     #     break
+                elif tstate == STATE.EXCEPTION:
+                    sts.logger.critical(f"Uncaught exception in rank: {i}, trying to stop all, exiting...")
+                    for des in range(1, sts.mpi_size):
+                        sts.mpi_comm.send(obj=COMMAND.EXIT, dest=des, tag=MPI_TAGS.COMMAND)
+                    raise RuntimeError(f"Uncaught exception in rank: {i}, trying to stop all, exiting...")
                 # else:
                 #     states[str(i)][cs.cf.pp_state] = tstate
         if not any([sts.mpi_comm.iprobe(source=i, tag=MPI_TAGS.STATE) for i in range(nv, sts.mpi_size)]):
