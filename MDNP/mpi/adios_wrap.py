@@ -94,11 +94,16 @@ class adser:
     def wr_array(self, name: str, arr: npt.NDArray):
         # self.logger.debug(f"Writing variable '{name}'")
         Nx, var, dtype = self.vars_arr[name]
-        arr = np.resize(arr, Nx)
+        if ln := len(arr) != Nx:
+            if ln > Nx:
+                arr = np.resize(arr, Nx)
+            elif ln < Nx:
+                arr = np.pad(arr, ((0, Nx - ln)), 'constant', constant_values=(0))
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_2d_array(self, name: str, arr: npt.NDArray):
+        raise NotImplementedError("Writing 2D arrays is not yet supported")
         # self.logger.debug(f"Writing variable '{name}'")
         shape, var, dtype = self.vars_arr[name]
         arr = np.resize(arr, shape)
