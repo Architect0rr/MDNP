@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 00:24:49
+# Last modified: 18-09-2023 02:09:14
 
 import csv
 import json
@@ -155,15 +155,11 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
     return 0
 
 
-def run(cwd: Path, temp_file: Path, son: Dict, eps: float):
-    subf: str = son[cs.fields.data_processing_folder]
+def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float):
     # dt: float = son[cs.fields.time_step]
     dis: int = son[cs.fields.every]
     Natoms: int = son[cs.fields.N_atoms]
     nvz: float = Natoms/son[cs.fields.volume]
-
-    outfile: Path = cwd / subf / cs.files.comp_data
-    data_file: Path = cwd / subf / cs.files.cluster_distribution_matrix
 
     cut: int = ncut(data_file)
     sizes: npt.NDArray[np.uint64] = np.arange(1, cut + 1, 1, dtype=np.int64)
@@ -203,6 +199,8 @@ def main(a: None = None):
     parser_run = sub_parsers.add_parser('run', help='Proceed distribution matrix')
     parser_run.add_argument('--eps', action='store', type=float, default=0.95, required=False, help='Epsilon')
     parser_run.add_argument('--temp_file', action='store', type=str, required=False, help='File with temperatures')
+    parser_run.add_argument('--data_file', action='store', type=str, required=False, help='File with data')
+    # parser_run.add_argument('--out_file', action='store', type=str, required=False, help='File write to')
 
     parser_dist = sub_parsers.add_parser('dist', help='Get specific distribution')
     parser_dist.add_argument('--type', action='store', type=str, default='norm', required=False, help='File to proceed')
@@ -239,11 +237,15 @@ def main(a: None = None):
     # dis: int = son[cs.fields.every]
     # Natoms: int = son[cs.fields.N_atoms]
     km_eps = args.eps
+    subf: str = son[cs.fields.data_processing_folder]
+    data_file: Path = cwd / subf / cs.files.cluster_distribution_matrix if args.data_file is None else Path(args.data_file)
+    outfile: Path = cwd / subf / cs.files.comp_data if args.data_file is None else Path(*(list(Path(args.data_file).parts[:-1]) + [cs.files.comp_data]))
+    temp_file = cwd / cs.files.temperature if args.temp_file is None else args.temp_file
 
     # data_file: Path = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
 
     if args.command == 'run':
-        return run(cwd, args.temp_file, son,  km_eps)
+        return run(data_file, outfile, temp_file, son,  km_eps)
     elif args.command == 'dist':
         raise NotImplementedError
         # return dist_getter(cwd, args, son, data_file, dt, dis, sizes, cut)

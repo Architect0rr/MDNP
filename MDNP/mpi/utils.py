@@ -6,18 +6,13 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 12:27:26
+# Last modified: 18-09-2023 11:28:01
 
 from enum import Enum
-from pathlib import Path
-from typing import Union, List, Tuple, Dict
+from typing import Union, List, Tuple
 
-import adios2
-import numpy as np
-from numpy import typing as npt
 from mpi4py import MPI
 
-from .. import constants as cs
 
 MPIComm = Union[MPI.Intracomm, MPI.Intercomm]
 GatherResponseType = List[Tuple[str, int]]
@@ -50,3 +45,4 @@ class STATE(int, Enum):
         super().__init__()
 
     EXITED = -1
+    EXCEPTION = -2
