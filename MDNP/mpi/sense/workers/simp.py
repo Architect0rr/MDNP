@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 22:04:21
+# Last modified: 18-09-2023 22:05:11
 
 # import argparse
 from pathlib import Path
@@ -59,7 +59,7 @@ def simple(sts: MC):
     ndim = 3
     worker_counter = 0
     max_cluster_size: int = 0
-    ntb_fp: Path = sts.cwd / params[cs.fields.data_processing_folder] / "ntb.bp"
+    ntb_fp: Path = sts.cwd / params[cs.fields.data_processing_folder] / f"ntb.{sts.mpi_rank}.bp"
     sts.logger.info(f"Trying to create adios storage: {ntb_fp.as_posix()}")
     adout.open(ntb_fp.as_posix())
     sts.logger.info("Stating main loop")
