@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 21:51:13
+# Last modified: 18-09-2023 22:12:01
 
 from typing import Dict, Any
 
@@ -19,7 +19,6 @@ from .utils_mpi import MC
 
 class adser:
     def __init__(self, sts: MC, mpi: bool = False) -> None:
-        # self.sts = sts
         self.mpi = mpi
         self.logger = sts.logger.getChild('adios_lib')
         self.logger.debug("Creating ADIOS instance")
@@ -41,8 +40,6 @@ class adser:
         self.vars_one: Dict[str, Any] = {}
         self.opened = False
         self.step = 0
-
-        # return adwriter, ad_sizes, ad_size_counts, ad_temps, ad_dist
 
     def open(self, name: str) -> None:
         if self.opened:
@@ -86,29 +83,29 @@ class adser:
             dtype)
 
     def begin_step(self):
-        self.logger.debug(f"Beginning step {self.step}")
+        # self.logger.debug(f"Beginning step {self.step}")
         self.adwriter.BeginStep()
 
     def end_step(self):
-        self.logger.debug(f"Ending step {self.step}")
+        # self.logger.debug(f"Ending step {self.step}")
         self.step += 1
         self.adwriter.EndStep()
 
     def wr_array(self, name: str, arr: npt.NDArray):
-        self.logger.debug(f"Writing variable '{name}'")
+        # self.logger.debug(f"Writing variable '{name}'")
         Nx, var, dtype = self.vars_arr[name]
         arr = np.resize(arr, Nx)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_2d_array(self, name: str, arr: npt.NDArray):
-        self.logger.debug(f"Writing variable '{name}'")
+        # self.logger.debug(f"Writing variable '{name}'")
         shape, var, dtype = self.vars_arr[name]
         arr = np.resize(arr, shape)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_one(self, name: str, val):
-        self.logger.debug(f"Writing variable '{name}'")
+        # self.logger.debug(f"Writing variable '{name}'")
         var, dtype = self.vars_one[name]
         self.adwriter.Put(var, np.array([val], dtype=dtype))
