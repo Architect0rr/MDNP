@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 12:15:49
+# Last modified: 18-09-2023 20:54:15
 
 # import argparse
 from pathlib import Path
@@ -24,22 +24,35 @@ from ...utils_mpi import MC, MPI_TAGS
 class adser:
     def __init__(self, sts: MC) -> None:
         self.sts = sts
+        self.sts.logger = self.sts.logger.getChild('adios_lib')
+        self.sts.logger.debug("Creating ADIOS instance")
         self.adios = adios2.ADIOS(sts.mpi_comm)  # type: ignore
+        self.sts.logger.debug("Declaring IO")
         self.bpIO = self.adios.DeclareIO("BPFile_N2N")
+        self.sts.logger.debug("Setting engine")
         self.bpIO.SetEngine('bp5')
+        self.sts.logger.debug("Adding transport")
         self.fileID = self.bpIO.AddTransport('File', {'Library': 'POSIX'})
         self.vars_arr: Dict[str, Any] = {}
         self.vars_one: Dict[str, Any] = {}
+        self.opened = False
+        self.step = 0
 
         # return adwriter, ad_sizes, ad_size_counts, ad_temps, ad_dist
 
     def open(self, name: str) -> None:
+        if self.opened:
+            self.sts.logger.error("Attempt to open storage in second time")
+            raise RuntimeError("Attempt to open storage in second time")
+        self.sts.logger.debug(f"Opening storage {name}")
         self.adwriter = self.bpIO.Open(name, adios2.Mode.Write)  # type: ignore
 
     def close(self):
+        self.sts.logger.debug("Closing storage")
         self.adwriter.Close()
 
     def declare_arr(self, name: str, Nx: int, dtype):
+        self.sts.logger.debug(f"Declaring 1D variable '{name}' with size {Nx} with type {dtype}")
         templ = np.zeros(Nx, dtype=dtype)
         var = self.bpIO.DefineVariable(
             name,                      # name
@@ -51,6 +64,7 @@ class adser:
         self.vars_arr[name] = (Nx, var, dtype)
 
     def declare_2d_arr(self, name: str, Nx: int, Ny: int, dtype):
+        self.sts.logger.debug(f"Declaring 2D variable '{name}' with size {Nx}x{Ny} with type {dtype}")
         templ = np.zeros((Ny, Ny), dtype=dtype)
         var = self.bpIO.DefineVariable(
             name,                      # name
@@ -62,29 +76,36 @@ class adser:
         self.vars_arr[name] = ((Nx, Ny), var, dtype)
 
     def declare_one(self, name: str, dtype):
+        self.sts.logger.debug(f"Declaring 0D variable '{name}' with type {dtype}")
         self.vars_one[name] = (
             self.bpIO.DefineVariable(name, np.zeros(1, dtype=dtype)),
             dtype)
 
     def begin_step(self):
+        self.sts.logger.debug(f"Beginning step {self.step}")
         self.adwriter.BeginStep()
 
     def end_step(self):
+        self.sts.logger.debug(f"Ending step {self.step}")
+        self.step += 1
         self.adwriter.EndStep()
 
     def wr_array(self, name: str, arr: npt.NDArray):
+        self.sts.logger.debug(f"Writing variable '{name}'")
         Nx, var, dtype = self.vars_arr[name]
         arr = np.resize(arr, Nx)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_2d_array(self, name: str, arr: npt.NDArray):
+        self.sts.logger.debug(f"Writing variable '{name}'")
         shape, var, dtype = self.vars_arr[name]
         arr = np.resize(arr, shape)
         arr = arr.astype(dtype=dtype)
         self.adwriter.Put(var, arr)
 
     def wr_one(self, name: str, val):
+        self.sts.logger.debug(f"Writing variable '{name}'")
         var, dtype = self.vars_one[name]
         self.adwriter.Put(var, np.array([val], dtype=dtype))
 
@@ -112,6 +133,7 @@ def simple(sts: MC):
 
     sts.logger.info("Setting up ADIOS2 output")
     adout = adser(sts)
+    sts.logger.debug("Declaring variables")
     adout.declare_arr(cs.lcf.worker_step, 1, np.int64)
     adout.declare_arr(cs.lcf.mat_step, 1, np.int64)
     adout.declare_arr(cs.lcf.real_timestep, 1, np.int64)
@@ -125,7 +147,7 @@ def simple(sts: MC):
     ndim = 3
     worker_counter = 0
     max_cluster_size: int = 0
-    ntb_fp: Path = sts.cwd / params[cs.fields.data_processing_folder] / f"ntb.bp"
+    ntb_fp: Path = sts.cwd / params[cs.fields.data_processing_folder] / "ntb.bp"
     sts.logger.info(f"Trying to create adios storage: {ntb_fp.as_posix()}")
     adout.open(ntb_fp.as_posix())
     sts.logger.info("Stating main loop")
