@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 22:12:01
+# Last modified: 19-09-2023 18:44:36
 
 from typing import Dict, Any
 
@@ -94,7 +94,7 @@ class adser:
     def wr_array(self, name: str, arr: npt.NDArray):
         # self.logger.debug(f"Writing variable '{name}'")
         Nx, var, dtype = self.vars_arr[name]
-        if ln := len(arr) != Nx:
+        if ln := arr.size != Nx:
             if ln > Nx:
                 arr = np.resize(arr, Nx)
             elif ln < Nx:
