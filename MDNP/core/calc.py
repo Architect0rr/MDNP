@@ -6,11 +6,11 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-09-2023 01:36:59
+# Last modified: 20-09-2023 05:07:14
 
 
 import numpy as np
-from typing import Union
+from typing import Union, List
 from numpy import typing as npt
 
 from . import props
@@ -57,12 +57,16 @@ def Srh_props(nvv: fp, T: float) -> fp:
     return nvv/props.nvs(T)
 
 
+def get_spec() -> List[str]:
+    return ['step', 'time', 'x', 'nv', 'T', 'nvs', 'Srh', 'Srh_p', 'nd']
+
+
 def get_row(step: int, sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], T: float, N_atoms: int, volume: float, dt: float, dis: int, kmin: int) -> npt.NDArray[np.float32]:
     # km: int = 10
     # eps = 0.9
 
     # ld = np.array([np.sum(sizes[:i]*dist[:i]) / N_atoms for i in range(1, len(dist))], dtype=np.float32)
-    # km = np.argmin(np.abs(ld - eps))  # type: ignore
+    # km = np.argmin(np.abs(ld - eps))
 
     # tow = np.zeros(8, dtype=np.float32)
     nv: fp = nvv(sizes, dist, volume, kmin)
@@ -71,7 +75,7 @@ def get_row(step: int, sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint3
         Srh = 0
     else:
         Srh = nv / nvss
-    tow = [
+    tow: List[fp | None] = [
         step,
         round(step * dt * dis),
         condensation_degree(dist, sizes, N_atoms, kmin),

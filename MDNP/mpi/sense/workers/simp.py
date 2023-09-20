@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 22:05:11
+# Last modified: 20-09-2023 05:46:23
 
 # import argparse
 from pathlib import Path
@@ -112,10 +112,10 @@ def simple(sts: MC):
                 kes = masses * vs_square / 2
                 sum_ke_by_size = np.array([np.sum(np.take(kes, ids_s-1)) for ids_s in ids_by_size])
                 atom_counts_by_size = cl_unique_sizes*sizes_cnt
-                ndofs_by_size = atom_counts_by_size*(ndim-1)
+                ndofs_by_size = (atom_counts_by_size-1)*ndim
                 temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
 
-                total_temp = (np.sum(kes) / (Natoms * (ndim - 1))) * 2
+                total_temp = (np.sum(kes) / ((Natoms - 1) * ndim)) * 2
 
                 adout.begin_step()
                 adout.wr_array(cs.lcf.worker_step, np.array(worker_counter))

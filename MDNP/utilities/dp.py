@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 18-09-2023 02:09:14
+# Last modified: 20-09-2023 05:07:38
 
 import csv
 import json
@@ -52,12 +52,14 @@ def proceed(infile: Path, outfile: Path, conf: Dict, temp_mat: Tuple[npt.NDArray
     sizes: npt.NDArray[np.uint32] = np.arange(1, cut + 1, 1, dtype=np.uint32)
     with pd.read_csv(infile, header=None, chunksize=BUF_SIZE) as reader, open(outfile, "w") as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow(calc.get_spec())
         chunk: pd.DataFrame
         for chunk in reader:
             for index, row in chunk.iterrows():
                 step = int(row[0])
                 dist = row[1:].to_numpy(dtype=np.uint32)
-                temp: float = temperatures[np.abs(temptime - int(step * dis)) <= 1][0]  # type: ignore
+                # print(f"Searching for {int(step * dis)}")
+                temp: float = temperatures[temptime == int(step)][0]  # type: ignore
                 tow = calc.get_row(step, sizes, dist, temp, N_atoms, volume, time_step, dis, km)
                 writer.writerow(tow)
 
@@ -167,12 +169,14 @@ def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float):
     temperatures_mat = pd.read_csv(temp_file, header=None)
     temptime: npt.NDArray[np.uint64] = temperatures_mat[0].to_numpy(dtype=np.uint64)
     temperatures: npt.NDArray[np.float32] = temperatures_mat[1].to_numpy(dtype=np.float32)
+    # print(f"Temptime shape: {temptime.shape}")
+    # print(f"Temperature shape: {temperatures.shape}")
 
     # N_atoms: int = son[cs.fields.N_atoms]
 
     Stemp = props.nvs_reverse(nvz)
     Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
-    Sstep: int = int(Sstep_var/dis) + 1
+    Sstep: int = int(Sstep_var) + 1
 
     Sdist = get_spec_step(data_file, Sstep)
     Sdist = Sdist * sizes
