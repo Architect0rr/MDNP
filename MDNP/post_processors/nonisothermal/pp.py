@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 12:53:33
+# Last modified: 21-09-2023 03:21:38
 
 import sys
 import json
@@ -56,7 +56,12 @@ def state_validate(cwd: Path, state: dict, logger: logging.Logger) -> bool:
     rlabels = state[mcs.sf.run_labels]
     for label in rlabels:
         for i in range(int(rlabels[label][mcs.sf.runs])):
-            dump_file: Path = cwd / mcs.folders.dumps / rlabels[label][str(i)][mcs.sf.dump_file]
+            logger.debug(f"Checking {label}:{i}:{mcs.sf.dump_file}")
+            try:
+                dump_file: Path = cwd / mcs.folders.dumps / rlabels[label][str(i)][mcs.sf.dump_file]
+            except KeyError:
+                logging.exception(json.dumps(rlabels, indent=4))
+                raise
             if not dump_file.exists():
                 fl = False
                 logger.warning(f"Dump file {dump_file.as_posix()} not exists")
