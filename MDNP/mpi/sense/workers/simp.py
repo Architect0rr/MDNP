@@ -6,11 +6,12 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 20-09-2023 05:46:23
+# Last modified: 22-09-2023 02:33:21
 
 # import argparse
 from pathlib import Path
 from typing import Dict
+from venv import logger
 
 import adios2  # type: ignore
 import numpy as np
@@ -113,7 +114,11 @@ def simple(sts: MC):
                 sum_ke_by_size = np.array([np.sum(np.take(kes, ids_s-1)) for ids_s in ids_by_size])
                 atom_counts_by_size = cl_unique_sizes*sizes_cnt
                 ndofs_by_size = (atom_counts_by_size-1)*ndim
-                temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
+                try:
+                    temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
+                except ZeroDivisionError:
+                    logger.exception("Pass... assuming zero")
+                    temp_by_size = np.zeros_like(sum_ke_by_size)
 
                 total_temp = (np.sum(kes) / ((Natoms - 1) * ndim)) * 2
 
