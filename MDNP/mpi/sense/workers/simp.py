@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 22-09-2023 02:33:21
+# Last modified: 22-09-2023 03:19:22
 
 # import argparse
 from pathlib import Path
@@ -116,7 +116,7 @@ def simple(sts: MC):
                 ndofs_by_size = (atom_counts_by_size-1)*ndim
                 try:
                     temp_by_size = (sum_ke_by_size / ndofs_by_size) * 2
-                except ZeroDivisionError:
+                except Exception:
                     logger.exception("Pass... assuming zero")
                     temp_by_size = np.zeros_like(sum_ke_by_size)
 
