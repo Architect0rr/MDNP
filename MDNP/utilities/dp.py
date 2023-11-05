@@ -157,7 +157,7 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
     return 0
 
 
-def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float, kmin: int | None = None):
+def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float, kmin: Union[int, None] = None):
     # dt: float = son[cs.fields.time_step]
     dis: int = son[cs.fields.every]
     Natoms: int = son[cs.fields.N_atoms]
