@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 20-09-2023 05:07:38
+# Last modified: 04-11-2023 09:25:42
 
 import csv
 import json
@@ -157,7 +157,7 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
     return 0
 
 
-def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float):
+def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float, kmin: int | None = None):
     # dt: float = son[cs.fields.time_step]
     dis: int = son[cs.fields.every]
     Natoms: int = son[cs.fields.N_atoms]
@@ -173,20 +173,22 @@ def run(data_file: Path, outfile: Path, temp_file: Path, son: Dict, eps: float):
     # print(f"Temperature shape: {temperatures.shape}")
 
     # N_atoms: int = son[cs.fields.N_atoms]
+    if kmin is None:
+        Stemp = props.nvs_reverse(nvz)
+        Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
+        Sstep: int = int(Sstep_var) + 1
 
-    Stemp = props.nvs_reverse(nvz)
-    Sstep_var: float = temptime[np.argmin(np.abs(temperatures - Stemp))]
-    Sstep: int = int(Sstep_var) + 1
+        Sdist = get_spec_step(data_file, Sstep)
+        Sdist = Sdist * sizes
 
-    Sdist = get_spec_step(data_file, Sstep)
-    Sdist = Sdist * sizes
-
-    kmin = 0
-    for i in range(len(Sdist)):
-        dat: int = int(np.sum(Sdist[:i]))
-        if dat >= eps * Natoms:
-            kmin = i + 1
-            break
+        kmin = 0
+        for i in range(len(Sdist)):
+            dat: int = int(np.sum(Sdist[:i]))
+            if dat >= eps * Natoms:
+                kmin = i + 1
+                break
+    else:
+        pass
 
     print(f"kmin is {kmin}")
 
@@ -202,6 +204,7 @@ def main(a: None = None):
 
     parser_run = sub_parsers.add_parser('run', help='Proceed distribution matrix')
     parser_run.add_argument('--eps', action='store', type=float, default=0.95, required=False, help='Epsilon')
+    parser_run.add_argument('--kmin', action='store', type=int, default=None, required=False, help='kmin')
     parser_run.add_argument('--temp_file', action='store', type=str, required=False, help='File with temperatures')
     parser_run.add_argument('--data_file', action='store', type=str, required=False, help='File with data')
     # parser_run.add_argument('--out_file', action='store', type=str, required=False, help='File write to')
@@ -241,6 +244,7 @@ def main(a: None = None):
     # dis: int = son[cs.fields.every]
     # Natoms: int = son[cs.fields.N_atoms]
     km_eps = args.eps
+    kmin = args.kmin
     subf: str = son[cs.fields.data_processing_folder]
     data_file: Path = cwd / subf / cs.files.cluster_distribution_matrix if args.data_file is None else Path(args.data_file)
     outfile: Path = cwd / subf / cs.files.comp_data if args.data_file is None else Path(*(list(Path(args.data_file).parts[:-1]) + [cs.files.comp_data]))
@@ -249,7 +253,7 @@ def main(a: None = None):
     # data_file: Path = find_file(cwd, args.file, subf, cs.files.cluster_distribution_matrix)
 
     if args.command == 'run':
-        return run(data_file, outfile, temp_file, son,  km_eps)
+        return run(data_file, outfile, temp_file, son,  km_eps, kmin)
     elif args.command == 'dist':
         raise NotImplementedError
         # return dist_getter(cwd, args, son, data_file, dt, dis, sizes, cut)

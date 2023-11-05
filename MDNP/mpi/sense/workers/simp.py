@@ -133,7 +133,8 @@ def simple(sts: MC):
                 adout.wr_array(cs.lcf.mat_dist, dist)
                 adout.end_step()
 
-                max_cluster_size = int(np.argmax(sizes[dist != 0]) + 1)
+                if max_cluster_size < int(np.argmax(sizes[dist != 0]) + 1):
+                    max_cluster_size = int(np.argmax(sizes[dist != 0]) + 1)
 
                 worker_counter += 1
                 sts.mpi_comm.send(obj=worker_counter, dest=0, tag=MPI_TAGS.STATE)

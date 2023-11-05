@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 22:18:31
+# Last modified: 05-11-2023 23:21:13
 
 import csv
 import json
@@ -70,7 +70,7 @@ def after_new(sts: MC, nv: int, params: Dict[str, Any]):
         json.dump(params, fp)
 
     sts.logger.info("Generating csv matrix")
-    new_gen_matrix(cwd, params, _storages, max(max_sizes), sts.logger.getChild('mtrix_gen'))
+    new_gen_matrix(cwd, params, _storages, max(max_sizes)+1, sts.logger.getChild('mtrix_gen'))
 
     sts.logger.info("Exiting...")
     return 0
