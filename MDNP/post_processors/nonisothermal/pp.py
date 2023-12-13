@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 13-12-2023 19:33:14
+# Last modified: 13-12-2023 19:37:12
 
 import sys
 import json
@@ -91,12 +91,13 @@ def setup_logger(cwd: Path, logger: logging.Logger):
     return logger
 
 
-def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logging.Logger) -> Union[Tuple[str, str], Tuple[None, None]]:
+def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logging.Logger, anyway: bool = False) -> Union[Tuple[str, str], Tuple[None, None]]:
     logger = setup_logger(cwd, logger)
 
-    if not (state_runs_check(state, logger.getChild('runs_check')) and state_validate(cwd, state, logger.getChild('validate'))):
-        logger.error("Stopped, not valid state")
-        return (None, None)
+    if not anyway:
+        if not (state_runs_check(state, logger.getChild('runs_check')) and state_validate(cwd, state, logger.getChild('validate'))):
+            logger.error("Stopped, not valid state")
+            return (None, None)
 
     df = []
     rlabels = state[mcs.sf.run_labels]
