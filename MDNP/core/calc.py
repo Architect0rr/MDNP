@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 20-09-2023 05:07:14
+# Last modified: 17-11-2023 02:28:58
 
 
 import numpy as np
@@ -58,7 +58,7 @@ def Srh_props(nvv: fp, T: float) -> fp:
 
 
 def get_spec() -> List[str]:
-    return ['step', 'time', 'x', 'nv', 'T', 'nvs', 'Srh', 'Srh_p', 'nd']
+    return ['step', 'time', 'x', 'nv', 'T', 'nvs', 'Srh', 'Srh_p', 'nd', 'S1']
 
 
 def get_row(step: int, sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint32], T: float, N_atoms: int, volume: float, dt: float, dis: int, kmin: int) -> npt.NDArray[np.float32]:
@@ -75,16 +75,21 @@ def get_row(step: int, sizes: npt.NDArray[np.uint32], dist: npt.NDArray[np.uint3
         Srh = 0
     else:
         Srh = nv / nvss
+    try:
+        S = dist[0] / props.n1s(T) / volume
+    except Exception:
+        S = 0
     tow: List[fp | None] = [
         step,
         round(step * dt * dis),
-        condensation_degree(dist, sizes, N_atoms, kmin),
+        condensation_degree(dist, sizes, N_atoms, km=kmin),
         nv,
         T,
         nvss,
         Srh,
         Srh_props(nv, T),
-        nd(sizes, dist, volume, kmin)
+        nd(sizes, dist, volume, kmin),
+        S
     ]
     # tow[1] = mean_size(sizes, dist)
     # tow[2] = maxsize(sizes, dist)

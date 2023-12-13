@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 09-09-2023 01:05:22
+# Last modified: 17-11-2023 02:15:10
 
 
 import numpy as np
@@ -23,6 +23,11 @@ def sigma(T: float) -> float:
 def nvs(T: float) -> float:
     q = -1.9395800010433437*T + 6.089581679273376
     return 5.85002406256173*np.exp(-q/T)
+
+
+def n1s(T: float) -> float:
+    q = -1.10143417*T + 4.91381273
+    return 2.05457139*np.exp(-q/T)
 
 
 def nvs_reverse(nv: float) -> float:

@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 21-09-2023 03:21:38
+# Last modified: 13-12-2023 19:33:14
 
 import sys
 import json
@@ -106,7 +106,12 @@ def end(cwd: Path, state: Dict[str, Any], args: argparse.Namespace, logger: logg
         for i in range(int(rlabels[label][mcs.sf.runs])):
             df.append(rlabels[label][str(i)][mcs.sf.dump_file])
 
-    df = [f"{mcs.folders.dumps}/{el}" for el in df]
+    gf = [f"{mcs.folders.dumps}/{el}" for el in df]
+
+    df = []
+    for el in gf:
+        if (cwd / el).exists():
+            df.append(el)
 
     logger.info("Getting info from first storage")
     sto_check: Path = cwd / df[0]
