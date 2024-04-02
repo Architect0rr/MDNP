@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 17-09-2023 13:07:12
+# Last modified: 16-12-2023 21:37:27
 
 import json
 import argparse
@@ -27,7 +27,7 @@ from ..utils import bearbeit
 
 
 def storage_rsolve(cwd: Path, _storages: List[str]) -> Dict[str, int]:
-    storages = {}
+    storages: Dict[str, int] = {}
     for storage in _storages:
         file = cwd / storage
         if not file.exists():
@@ -90,3 +90,9 @@ def main(sts: MC):
         sts.logger = sts.logger.getChild('simp')
         sts.logger.info("Running simple run")
         return new_simp.new(sts, son, 1)
+    elif args.mode == 5:
+        sts.logger = sts.logger.getChild('simp')
+        sts.logger.info("Running simple run")
+        return new_simp.new(sts, son, 1)
+    else:
+        sts.logger.error(f"Unknown mode {args.mode}")

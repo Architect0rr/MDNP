@@ -39,27 +39,6 @@ def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: 
     logger.debug("Success")
 
 
-def new_gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger):
-    output_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
-    temps_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / "temps.csv"
-    logger.debug(f"Trying to open {output_csv_fp.as_posix()}")
-    with output_csv_fp.open("w") as csv_file, temps_csv_fp.open("w") as temps_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        temper_wr = csv.writer(temps_file, delimiter=',')
-        logger.debug("Starting loop")
-        for storage in storages:
-            with adios2.open(storage.as_posix(), 'r') as reader:  # type: ignore
-                for step in reader:
-                    stee: int = step.read(cs.lcf.mat_step)
-                    dist = step.read(cs.lcf.mat_dist)
-                    writer.writerow(np.hstack([stee, dist[:cut]]).astype(dtype=np.uint32).flatten())
-                    temps = step.read(cs.lcf.cl_temps)
-                    tot_temp = step.read(cs.lcf.tot_temp)
-                    temper_wr.writerow(np.hstack([stee, tot_temp, temps[:cut]]).astype(dtype=np.float32).flatten('A'))
-
-    logger.debug("Success")
-
-
 def after_new(sts: MC, nv: int, params: Dict[str, Any]):
     cwd, mpi_comm, mpi_size = sts.cwd, sts.mpi_comm, sts.mpi_size
 
@@ -86,7 +65,7 @@ def after_new(sts: MC, nv: int, params: Dict[str, Any]):
         json.dump(params, fp)
 
     sts.logger.info("Generating csv matrix")
-    gen_matrix(cwd, params, _storages, max(max_sizes), sts.logger.getChild('mtrix_gen'))
+    gen_matrix(cwd, params, _storages, max(max_sizes)+1, sts.logger.getChild('matrix_gen'))
 
     sts.logger.info("Exiting...")
     return 0

@@ -6,14 +6,14 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 05-11-2023 23:18:22
+# Last modified: 05-01-2024 16:50:30
 
 
 import logging
 import os
 from pathlib import Path
 
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 
 from mpi4py import MPI
@@ -66,13 +66,14 @@ def mpi_wrap():
     sts = MC(cwd, mpi_comm, mpi_rank, mpi_size, logger)
 
     if mpi_rank == 0:
-        sts.logger = sts.logger.getChild('root')
+        sts.logger = sts.logger.getChild("root")
         return root(sts)
     else:
-        sts.logger = sts.logger.getChild('nonroot')
+        sts.logger = sts.logger.getChild("nonroot")
         return nonroot(sts)
 
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(mpi_wrap())

@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 05-11-2023 23:21:13
+# Last modified: 30-12-2023 00:09:54
 
 import csv
 import json
@@ -23,23 +23,23 @@ from .utils import distribute, gw2c
 from ...utils_mpi import MC, MPI_TAGS
 
 
-def new_gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger):
+def gen_matrix(cwd: Path, params: Dict, storages: List[Path], cut: int, logger: logging.Logger) -> None:
     output_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / cs.files.cluster_distribution_matrix
     temps_csv_fp: Path = cwd / params[cs.fields.data_processing_folder] / "temps.csv"
     logger.debug(f"Trying to open {output_csv_fp.as_posix()}")
     with output_csv_fp.open("w") as csv_file, temps_csv_fp.open("w") as temps_file:
-        writer = csv.writer(csv_file, delimiter=',')
-        temper_wr = csv.writer(temps_file, delimiter=',')
+        writer = csv.writer(csv_file, delimiter=",")
+        temper_wr = csv.writer(temps_file, delimiter=",")
         logger.debug("Starting loop")
         for storage in storages:
-            with adios2.open(storage.as_posix(), 'r') as reader:  # type: ignore
+            with adios2.open(storage.as_posix(), "r") as reader:  # type: ignore
                 for step in reader:
                     stee: int = step.read(cs.lcf.mat_step)
                     dist = step.read(cs.lcf.mat_dist)
                     writer.writerow(np.hstack([stee, dist[:cut]]).astype(dtype=np.uint32).flatten())
                     temps = step.read(cs.lcf.cl_temps)
                     tot_temp = step.read(cs.lcf.tot_temp)
-                    temper_wr.writerow(np.hstack([stee, tot_temp, temps[:cut]]).astype(dtype=np.float32).flatten('A'))
+                    temper_wr.writerow(np.hstack([stee, tot_temp, temps[:cut]]).astype(dtype=np.float32).flatten("A"))
 
     logger.debug("Success")
 
@@ -65,12 +65,12 @@ def after_new(sts: MC, nv: int, params: Dict[str, Any]):
     params[cs.fields.matrix_storages] = [storage.as_posix() for storage in _storages]
 
     sts.logger.info("Writing storages to datafile")
-    data_file = (cwd / cs.files.data)
-    with open(data_file, 'w') as fp:
+    data_file = cwd / cs.files.data
+    with open(data_file, "w") as fp:
         json.dump(params, fp)
 
     sts.logger.info("Generating csv matrix")
-    new_gen_matrix(cwd, params, _storages, max(max_sizes)+1, sts.logger.getChild('mtrix_gen'))
+    gen_matrix(cwd, params, _storages, max(max_sizes) + 1, sts.logger.getChild("matrix_gen"))
 
     sts.logger.info("Exiting...")
     return 0
@@ -96,5 +96,5 @@ def new(sts: MC, params: Dict, nv: int):
         mpi_comm.send(obj=mkl, dest=nv + i, tag=MPI_TAGS.SERV_DATA_1)
         mpi_comm.send(obj=params, dest=nv + i, tag=MPI_TAGS.SERV_DATA_2)
 
-    sts.logger = sts.logger.getChild('after_new')
+    sts.logger = sts.logger.getChild("after_new")
     return after_new(sts, nv, params)

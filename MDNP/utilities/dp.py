@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 04-11-2023 09:25:42
+# Last modified: 16-12-2023 21:25:44
 
 import csv
 import json
@@ -57,11 +57,15 @@ def proceed(infile: Path, outfile: Path, conf: Dict, temp_mat: Tuple[npt.NDArray
         for chunk in reader:
             for index, row in chunk.iterrows():
                 step = int(row[0])
-                dist = row[1:].to_numpy(dtype=np.uint32)
-                # print(f"Searching for {int(step * dis)}")
-                temp: float = temperatures[temptime == int(step)][0]  # type: ignore
-                tow = calc.get_row(step, sizes, dist, temp, N_atoms, volume, time_step, dis, km)
-                writer.writerow(tow)
+                try:
+                    dist = row[1:].to_numpy(dtype=np.uint32)
+                    # print(f"Searching for {int(step * dis)}")
+                    temp: float = temperatures[temptime == int(step)][0]  # type: ignore
+                    tow = calc.get_row(step, sizes, dist, temp, N_atoms, volume, time_step, dis, km)
+                    writer.writerow(tow)
+                except Exception:
+                    print(f"Step: {step}, exception.")
+                    raise
 
     return 0
 
@@ -145,7 +149,7 @@ def dist_getter(cwd: Path, args: argparse.Namespace, son: Dict, data_file: Path,
         i = 0
         while i < cut:
             val = np.sum(dist[i:i+h]) / h / son[cs.fields.volume]
-            dist_buff = np.vstack([dist_buff, (i, val)])
+            dist_buff = np.vstack([dist_buff, (i, val)]) # type: ignore
             i += h
             h += args.dh
         pd.DataFrame(dist_buff[1:, :], dtype=np.float32).to_csv(fs, header=False, index=False)
