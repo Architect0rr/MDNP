@@ -6,7 +6,7 @@
 # This software is released under the MIT License.
 # https://opensource.org/licenses/MIT
 
-# Last modified: 16-12-2023 21:37:27
+# Last modified: 14-04-2024 12:27:50
 
 import json
 import argparse
@@ -71,8 +71,8 @@ def main(sts: MC):
     with open(data_file, 'w') as fp:
         json.dump(son, fp)
 
-    dsfghj: Path = (sts.cwd / son[cs.fields.data_processing_folder])
-    dsfghj.mkdir(exist_ok=True)
+    data_processing_folder: Path = (sts.cwd / son[cs.fields.data_processing_folder])
+    data_processing_folder.mkdir(exist_ok=True)
 
     if args.mode == 1:
         sts.logger.info("Running group run")
